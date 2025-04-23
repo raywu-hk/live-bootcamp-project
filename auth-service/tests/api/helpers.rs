@@ -52,7 +52,7 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub async fn logout(&self) -> reqwest::Response {
+    pub async fn get_logout(&self) -> reqwest::Response {
         self.http_client
             .get(&format!("{}/logout", &self.address))
             .send()
