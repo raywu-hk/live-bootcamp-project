@@ -13,33 +13,43 @@ async fn root_returns_auth_ui() {
 #[tokio::test]
 async fn login_return_ok() {
     let app = TestApp::new().await;
+    
     let response = app.get_login().await;
+    
     assert_eq!(response.status(), StatusCode::OK);
 }
 #[tokio::test]
 async fn signup_return_ok() {
     let app = TestApp::new().await;
+    
     let response = app.get_signup().await;
-    assert_eq!(response.status(), StatusCode::OK);
+    
+    assert_eq!(response.status().as_u16(), StatusCode::OK);
 }
 
 #[tokio::test]
 async fn logout_return_ok() {
     let app = TestApp::new().await;
+    
     let response = app.get_logout().await;
-    assert_eq!(response.status(), StatusCode::OK);
+    
+    assert_eq!(response.status().as_u16(), StatusCode::OK);
 }
 
 #[tokio::test]
 async fn verify_2fa_return_ok() {
     let app = TestApp::new().await;
+    
     let response = app.get_verify_2fa().await;
-    assert_eq!(response.status(), StatusCode::OK);
+    
+    assert_eq!(response.status().as_u16(), StatusCode::OK);
 }
 
 #[tokio::test]
 async fn verify_token_return_ok() {
     let app = TestApp::new().await;
+    
     let response = app.get_verify_token().await;
-    assert_eq!(response.status(), StatusCode::OK);
+    
+    assert_eq!(response.status().as_u16(), StatusCode::OK);
 }

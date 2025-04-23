@@ -28,14 +28,6 @@ impl TestApp {
         }
     }
 
-    pub async fn get_signup(&self) -> reqwest::Response {
-        self.http_client
-            .get(&format!("{}/signup", &self.address))
-            .send()
-            .await
-            .expect("Failed to execute request.")
-    }
-
     pub async fn get_root(&self) -> reqwest::Response {
         self.http_client
             .get(&format!("{}/", &self.address))
@@ -44,9 +36,17 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
+    pub async fn get_signup(&self) -> reqwest::Response {
+        self.http_client
+            .post(&format!("{}/signup", &self.address))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
     pub async fn get_login(&self) -> reqwest::Response {
         self.http_client
-            .get(&format!("{}/login", &self.address))
+            .post(&format!("{}/login", &self.address))
             .send()
             .await
             .expect("Failed to execute request.")
@@ -54,7 +54,7 @@ impl TestApp {
 
     pub async fn get_logout(&self) -> reqwest::Response {
         self.http_client
-            .get(&format!("{}/logout", &self.address))
+            .post(&format!("{}/logout", &self.address))
             .send()
             .await
             .expect("Failed to execute request.")
@@ -62,7 +62,7 @@ impl TestApp {
 
     pub async fn get_verify_2fa(&self) -> reqwest::Response {
         self.http_client
-            .get(&format!("{}/verify-2fa", &self.address))
+            .post(&format!("{}/verify-2fa", &self.address))
             .send()
             .await
             .expect("Failed to execute request.")
@@ -70,7 +70,7 @@ impl TestApp {
 
     pub async fn get_verify_token(&self) -> reqwest::Response {
         self.http_client
-            .get(&format!("{}/verify-token", &self.address))
+            .post(&format!("{}/verify-token", &self.address))
             .send()
             .await
             .expect("Failed to execute request.")
