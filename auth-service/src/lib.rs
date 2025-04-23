@@ -5,7 +5,7 @@ use axum::Router;
 use std::error::Error;
 use tower_http::services::ServeDir;
 
-pub mod routes;
+mod routes;
 
 pub struct Application {
     server: Serve<Router, Router>,
