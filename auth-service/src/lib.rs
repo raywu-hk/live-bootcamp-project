@@ -1,12 +1,12 @@
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use crate::routes::{login, logout, signup, verify_2fa, verify_token};
 use axum::routing::post;
 use axum::serve::Serve;
 use axum::Router;
 use std::error::Error;
 use tower_http::services::ServeDir;
 
-// This struct encapsulates our application-related logic.
+pub mod routes;
+
 pub struct Application {
     server: Serve<Router, Router>,
     // address is exposed as a public field
@@ -36,24 +36,4 @@ impl Application {
         println!("listening on {}", &self.address);
         self.server.await
     }
-}
-
-async fn signup() -> impl IntoResponse {
-    StatusCode::OK.into_response()
-}
-
-async fn login() -> impl IntoResponse {
-    StatusCode::OK.into_response()
-}
-
-async fn verify_2fa() -> impl IntoResponse {
-    StatusCode::OK.into_response()
-}
-
-async fn logout() -> impl IntoResponse {
-    StatusCode::OK.into_response()
-}
-
-async fn verify_token() -> impl IntoResponse {
-    StatusCode::OK.into_response()
 }
