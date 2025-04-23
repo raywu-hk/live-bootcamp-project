@@ -5,7 +5,7 @@ use axum::http::StatusCode;
 async fn logout_return_ok() {
     let app = TestApp::new().await;
 
-    let response = app.get_logout().await;
+    let response = app.post_logout().await;
 
     assert_eq!(response.status().as_u16(), StatusCode::OK);
 }

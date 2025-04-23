@@ -5,7 +5,7 @@ use axum::http::StatusCode;
 async fn verify_2fa_return_ok() {
     let app = TestApp::new().await;
 
-    let response = app.get_verify_2fa().await;
+    let response = app.post_verify_2fa().await;
 
     assert_eq!(response.status().as_u16(), StatusCode::OK);
 }
