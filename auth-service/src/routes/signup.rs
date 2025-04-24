@@ -31,12 +31,12 @@ pub async fn signup(
     let user = User::new(email, password, request.requires_2fa);
 
     let mut user_store = state.user_store.write().await;
-    if user_store.get_user(&user.email).is_ok() {
+    if user_store.get_user(&user.email).await.is_ok() {
         return Err(AuthAPIError::UserAlreadyExists);
     }
 
     // Add `user` to the `user_store`. Simply unwrap the returned `Result` enum type for now.
-    if user_store.add_user(user).is_err() {
+    if user_store.add_user(user).await.is_err() {
         return Err(AuthAPIError::UnexpectedError);
     }
 
