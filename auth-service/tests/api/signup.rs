@@ -108,22 +108,17 @@ async fn should_return_400_if_invalid_input() {
 async fn should_return_409_if_email_already_exists() {
     // Call the signup route twice. The second request should fail with a 409 HTTP status code
     let app = TestApp::new().await;
-    let email_test_cases = [
-        serde_json::json!({
-            "email": "test@test.com",
-            "password": "8".repeat(8),
-            "requires2FA": true
-        }),
-        serde_json::json!({
-            "email": "test@test.com",
-            "password": "8".repeat(8),
-            "requires2FA": true
-        }),
-    ];
+    let email_test_cases = [serde_json::json!({
+        "email": "test@test.com",
+        "password": "8".repeat(8),
+        "requires2FA": true
+    })];
     // Create an array of invalid inputs. Then, iterate through the array and
     // make HTTP calls to the signup route. Assert a 409 HTTP status code is returned.
-    let _ = app.post_signup(&email_test_cases[0]).await;
-    let response = app.post_signup(&email_test_cases[1]).await;
+    let response = app.post_signup(&email_test_cases[0]).await;
+    assert_eq!(response.status().as_u16(), 201);
+
+    let response = app.post_signup(&email_test_cases[0]).await;
     assert_eq!(response.status().as_u16(), 409);
     assert_eq!(
         response

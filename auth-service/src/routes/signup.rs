@@ -1,4 +1,4 @@
-use crate::domain::{AuthAPIError, User};
+use crate::domain::{AuthAPIError, Email, Password, User};
 use crate::AppState;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -22,11 +22,9 @@ pub async fn signup(
     state: State<AppState>,
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
-    let email = request.email;
-    let password = request.password;
-    if is_email_invalid(&email) || is_password_invalue(&password) {
-        return Err(AuthAPIError::InvalidCredentials);
-    }
+    let email = Email::parse(&request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let password =
+        Password::parse(&request.password).map_err(|_| AuthAPIError::InvalidCredentials)?;
     // Create a new `User` instance using data in the `request`
     let user = User::new(email, password, request.requires_2fa);
 
@@ -45,24 +43,4 @@ pub async fn signup(
     });
 
     Ok((StatusCode::CREATED, response))
-}
-
-fn is_email_invalid(email: &str) -> bool {
-    if email.is_empty() {
-        return true;
-    }
-    if !email.contains("@") {
-        return true;
-    }
-    if email.starts_with('@') {
-        return true;
-    }
-    false
-}
-
-fn is_password_invalue(password: &str) -> bool {
-    if password.len() < 8 {
-        return true;
-    }
-    false
 }
