@@ -1,9 +1,11 @@
+use validator::ValidateEmail;
+
 #[derive(Debug, PartialEq, Clone, Eq, Hash)]
 pub struct Email(String);
 
 impl Email {
     pub fn parse(email: &str) -> Result<Self, String> {
-        if !validator::validate_email(email) {
+        if !ValidateEmail::validate_email(&email) {
             return Err(format!("{} is not a valid email.", email));
         }
         Ok(Email(email.to_owned()))

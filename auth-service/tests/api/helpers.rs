@@ -1,5 +1,5 @@
 use auth_service::utils::test::APP_ADDRESS;
-use auth_service::{AppState, Application, HashmapUserStore};
+use auth_service::{AppState, Application, HashMapBannedTokenStore, HashmapUserStore};
 use reqwest::cookie::Jar;
 use reqwest::Client;
 use std::sync::Arc;
@@ -15,7 +15,8 @@ pub struct TestApp {
 impl TestApp {
     pub async fn new() -> Self {
         let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
-        let app_state = AppState::new(user_store);
+        let banned_token_store = Arc::new(RwLock::new(HashMapBannedTokenStore::default()));
+        let app_state = AppState::new(user_store, banned_token_store);
         let app = Application::build(app_state, APP_ADDRESS)
             .await
             .expect("Failed to build app");
@@ -89,9 +90,13 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub async fn post_verify_token(&self) -> reqwest::Response {
+    pub async fn post_verify_token<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
         self.http_client
-            .post(&format!("{}/verify-token", &self.address))
+            .post(format!("{}/verify-token", &self.address))
+            .json(body)
             .send()
             .await
             .expect("Failed to execute request.")

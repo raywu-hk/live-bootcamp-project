@@ -6,15 +6,15 @@ use serde_json::json;
 #[tokio::test]
 async fn should_return_200_if_valid_jwt_cookie() {
     let signup_body = json!({
-        "username": "user@example.com",
+        "email": "user@example.com",
         "password": "password",
-        "verify_2fa": false,
+        "requires2FA": false
     });
     let app = TestApp::new().await;
-    let sign_response = app.post_signup(&signup_body).await;
-    assert_eq!(sign_response.status(), StatusCode::CREATED);
+    let signup_response = app.post_signup(&signup_body).await;
+    assert_eq!(signup_response.status(), StatusCode::CREATED);
     let login_body = json!({
-        "username": "user@example.com",
+        "email": "user@example.com",
         "password": "password",
     });
 
@@ -28,15 +28,15 @@ async fn should_return_200_if_valid_jwt_cookie() {
 #[tokio::test]
 async fn should_return_400_if_logout_called_twice_in_a_row() {
     let signup_body = json!({
-        "username": "user@example.com",
+        "email": "user@example.com",
         "password": "password",
-        "verify_2fa": false,
+        "requires2FA": false
     });
     let app = TestApp::new().await;
     let sign_response = app.post_signup(&signup_body).await;
     assert_eq!(sign_response.status(), StatusCode::CREATED);
     let login_body = json!({
-        "username": "user@example.com",
+        "email": "user@example.com",
         "password": "password",
     });
 

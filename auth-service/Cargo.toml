@@ -15,14 +15,14 @@ chrono = "0.4.40"
 dotenvy = "0.15.7"
 lazy_static = "1.5.0"
 #Enable async
-tokio = { version = "1.36", features = ["full"] }
+tokio = { version = "1.44.2", features = ["full"] }
 #Enable trait that has async fn become compitible to (dyn trait)
 async-trait = "0.1.88"
 tower-http = { version = "0.6.2", features = ["fs","cors"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 uuid = { version = "1.16.0", features = ["v7", "serde"] }
-validator = "0.16.1"
+validator = "0.20.0"
 log = "0.4.27"
 env_logger = "0.11.8"
 
