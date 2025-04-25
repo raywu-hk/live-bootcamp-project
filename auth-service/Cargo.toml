@@ -6,19 +6,28 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.7.4"
+axum = "0.8.3"
+#provides extra utilities for axum.
+#The cookie feature enables the CookieJar extractor to view and set cookies.
+axum-extra = { version = "0.10.1", features = ["cookie"] }
+jsonwebtoken = "9.3.1"
+chrono = "0.4.40"
+dotenvy = "0.15.7"
+lazy_static = "1.5.0"
+#Enable async
 tokio = { version = "1.36", features = ["full"] }
+#Enable trait that has async fn become compitible to (dyn trait)
+async-trait = "0.1.88"
 tower-http = { version = "0.5.0", features = ["fs"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 uuid = { version = "1.16.0", features = ["v7", "serde"] }
-async-trait = "0.1.88"
 validator = "0.16.1"
 log = "0.4.27"
 env_logger = "0.11.8"
 
 [dev-dependencies]
-reqwest = { version = "0.12.15", default-features = false, features = ["json"] }
+reqwest = { version = "0.12.15", default-features = false, features = ["json","cookies"] }
 fake = "=2.3.0"
 quickcheck = "0.9.2"
 quickcheck_macros = "0.9.1"

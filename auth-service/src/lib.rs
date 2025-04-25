@@ -1,3 +1,4 @@
+use crate::domain::AuthAPIError;
 use crate::routes::{login, logout, signup, verify_2fa, verify_token};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -6,18 +7,18 @@ use axum::serve::Serve;
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
-
 mod app_state;
-pub use app_state::*;
 mod domain;
 pub mod routes;
 mod services;
-use crate::domain::AuthAPIError;
+pub mod utils;
+pub use app_state::*;
 pub use services::*;
 
 pub struct Application {
-    server: Serve<Router, Router>,
+    server: Serve<TcpListener, Router, Router>,
     // address is exposed as a public field
     // so we have access to it in tests.
     pub address: String,
@@ -30,7 +31,7 @@ pub struct ErrorResponse {
 impl Application {
     pub async fn build(app_state: AppState, address: &str) -> Result<Self, Box<dyn Error>> {
         let router = axum::Router::new()
-            .nest_service("/", ServeDir::new("assets"))
+            .fallback_service(ServeDir::new("assets"))
             .route("/signup", post(signup))
             .route("/login", post(login))
             .route("/logout", post(logout))

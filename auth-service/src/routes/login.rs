@@ -1,8 +1,9 @@
 use crate::domain::{AuthAPIError, Email, Password};
-use crate::AppState;
+use crate::{utils, AppState};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{response::IntoResponse, Json};
+use axum_extra::extract::CookieJar;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -12,8 +13,9 @@ pub struct LoginRequest {
 }
 pub async fn login(
     state: State<AppState>,
+    jar: CookieJar,
     Json(request): Json<LoginRequest>,
-) -> Result<impl IntoResponse, AuthAPIError> {
+) -> Result<(CookieJar, impl IntoResponse), AuthAPIError> {
     let email = Email::parse(&request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
     let password =
         Password::parse(&request.password).map_err(|_| AuthAPIError::InvalidCredentials)?;
@@ -24,10 +26,15 @@ pub async fn login(
         return Err(AuthAPIError::IncorrectCredentials);
     }
 
-    let _user = user_store
+    let user = user_store
         .get_user(&email)
         .await
-        .map_err(|_| AuthAPIError::UnexpectedError);
+        .map_err(|_| AuthAPIError::UnexpectedError)?;
+    // Call the generate_auth_cookie function defined in the auth module.
+    // If the function call fails return AuthAPIError::UnexpectedError.
+    let auth_cookie =
+        utils::generate_auth_cookie(&user.email).map_err(|_| AuthAPIError::UnexpectedError)?;
+    let updated_jar = jar.add(auth_cookie);
 
-    Ok(StatusCode::OK.into_response())
+    Ok((updated_jar, StatusCode::OK.into_response()))
 }
