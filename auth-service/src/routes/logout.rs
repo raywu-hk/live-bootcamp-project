@@ -4,6 +4,7 @@ use crate::AppState;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::CookieJar;
 
 pub async fn logout(
@@ -32,5 +33,8 @@ pub async fn logout(
         .await
         .map_err(|_| AuthAPIError::UnexpectedError)?;
 
-    Ok((jar, StatusCode::OK))
+    // remove token in cookie
+    let updated_jar = jar.remove(Cookie::from(JWT_COOKIE_NAME));
+
+    Ok((updated_jar, StatusCode::OK))
 }
