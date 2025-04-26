@@ -1,4 +1,3 @@
-use crate::domain::AuthAPIError;
 use crate::routes::{login, logout, signup, verify_2fa, verify_token};
 use axum::http::{Method, StatusCode};
 use axum::response::{IntoResponse, Response};
@@ -12,7 +11,8 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 
 mod app_state;
-mod domain;
+pub mod domain;
+pub use domain::*;
 pub mod routes;
 mod services;
 pub mod utils;

@@ -1,6 +1,7 @@
 use crate::helpers::TestApp;
 use auth_service::routes::TwoFactorAuthResponse;
 use auth_service::utils::JWT_COOKIE_NAME;
+use auth_service::Email;
 use reqwest::StatusCode;
 use serde_json::json;
 
@@ -114,12 +115,21 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     let response = app.post_login(&login_body).await;
 
     assert_eq!(response.status(), StatusCode::PARTIAL_CONTENT);
-    assert_eq!(
-        response
-            .json::<TwoFactorAuthResponse>()
-            .await
-            .expect("Could not deserialize response body to TwoFactorAuthResponse")
-            .message,
-        "2FA required".to_owned()
-    );
+    let json_body = response
+        .json::<TwoFactorAuthResponse>()
+        .await
+        .expect("Could not deserialize response body to TwoFactorAuthResponse");
+    assert_eq!(json_body.message, "2FA required".to_owned());
+
+    //assert that `json_body.login_attempt_id` is stored inside `app.two_fa_code_store`
+    let email = Email::parse("user@example.com").expect("Could not parse email");
+    let two_fa_tuple = app
+        .two_fa_code_store
+        .read()
+        .await
+        .get_code(&email)
+        .await
+        .expect("Could not get code");
+
+    assert_eq!(json_body.login_attempt_id, two_fa_tuple.0.as_ref());
 }
