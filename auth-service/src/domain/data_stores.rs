@@ -1,6 +1,5 @@
 use crate::domain::Email;
 use rand::Rng;
-use std::str::from_utf8;
 use uuid::Uuid;
 
 // This trait represents the interface all concrete 2FA code stores should implement
@@ -68,10 +67,7 @@ impl Default for TwoFACode {
     fn default() -> Self {
         // Use the `rand` crate to generate a random 2FA code.
         // The code should be 6 digits (ex: 834629)
-        let mut arr = [0u8; 6];
-        rand::rng().fill(&mut arr[..]);
-        let code = from_utf8(&arr).unwrap().to_string();
-        TwoFACode(code)
+        TwoFACode(format!("{:06}", rand::rng().random_range(0..=999999)))
     }
 }
 
