@@ -1,4 +1,5 @@
 use crate::helpers::TestApp;
+use auth_service::routes::TwoFactorAuthResponse;
 use auth_service::utils::JWT_COOKIE_NAME;
 use reqwest::StatusCode;
 use serde_json::json;
@@ -54,7 +55,7 @@ async fn should_return_400_if_invalid_input() {
     let signup_payload = json!({
         "email": "user@example.com",
         "password": "password",
-        "requires2FA":false
+        "requires2FA": false
     });
     let signup_result = app.post_signup(&signup_payload).await;
 
@@ -77,7 +78,7 @@ async fn should_return_401_if_incorrect_credentials() {
     let signup_payload = json!({
         "email": "user@example.com",
         "password": "password",
-        "requires2FA":false
+        "requires2FA": false
     });
     let signup_result = app.post_signup(&signup_payload).await;
 
@@ -91,4 +92,34 @@ async fn should_return_401_if_incorrect_credentials() {
     let login_result = app.post_login(&login_payload).await;
 
     assert_eq!(login_result.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
+    let app = TestApp::new().await;
+    let signup_payload = json!({
+        "email": "user@example.com",
+        "password": "password",
+        "requires2FA": true
+    });
+    let signup_result = app.post_signup(&signup_payload).await;
+
+    assert_eq!(signup_result.status(), StatusCode::CREATED);
+
+    let login_body = serde_json::json!({
+        "email": "user@example.com",
+        "password": "password"
+    });
+
+    let response = app.post_login(&login_body).await;
+
+    assert_eq!(response.status(), StatusCode::PARTIAL_CONTENT);
+    assert_eq!(
+        response
+            .json::<TwoFactorAuthResponse>()
+            .await
+            .expect("Could not deserialize response body to TwoFactorAuthResponse")
+            .message,
+        "2FA required".to_owned()
+    );
 }
