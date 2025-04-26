@@ -1,3 +1,4 @@
+mod data_stores;
 mod email;
 mod error;
 mod password;
@@ -5,6 +6,7 @@ mod token_store;
 mod user;
 mod user_stores;
 
+pub use data_stores::*;
 pub use email::*;
 pub use error::*;
 pub use password::*;
