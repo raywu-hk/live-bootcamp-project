@@ -1,6 +1,6 @@
 use crate::domain::Email;
 use rand::Rng;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 // This trait represents the interface all concrete 2FA code stores should implement
@@ -25,7 +25,7 @@ pub enum TwoFACodeStoreError {
     UnexpectedError,
 }
 
-#[derive(Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct LoginAttemptId(String);
 
 impl LoginAttemptId {
@@ -51,7 +51,7 @@ impl AsRef<str> for LoginAttemptId {
     }
 }
 
-#[derive(Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct TwoFACode(String);
 
 impl TwoFACode {
