@@ -78,11 +78,20 @@ async fn handle_2fa(
     {
         return (jar, Err(AuthAPIError::UnexpectedError));
     }
+    // TODO: send 2FA code via the email client. Return `AuthAPIError::UnexpectedError` if the operation fails.
+    if state
+        .email_client
+        .send_email(email, "2FA_Code", two_fa_code.as_ref())
+        .await
+        .is_err()
+    {
+        return (jar, Err(AuthAPIError::UnexpectedError));
+    }
     // Return a TwoFactorAuthResponse. The message should be "2FA required".
     // The login attempt ID should be "123456". We will replace this hard-coded login attempt ID soon!
     let response = LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
         message: "2FA required".to_owned(),
-        login_attempt_id: login_attempt_id.as_ref().to_string(),
+        login_attempt_id: login_attempt_id.as_ref().to_owned(),
     });
     (jar, Ok((StatusCode::PARTIAL_CONTENT, Json(response))))
 }
