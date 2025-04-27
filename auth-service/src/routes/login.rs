@@ -78,7 +78,7 @@ async fn handle_2fa(
     {
         return (jar, Err(AuthAPIError::UnexpectedError));
     }
-    // TODO: send 2FA code via the email client. Return `AuthAPIError::UnexpectedError` if the operation fails.
+    //send 2FA code via the email client. Return `AuthAPIError::UnexpectedError` if the operation fails.
     if state
         .email_client
         .send_email(email, "2FA_Code", two_fa_code.as_ref())
