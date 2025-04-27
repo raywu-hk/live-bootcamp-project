@@ -13,7 +13,6 @@ axum-extra = { version = "0.10.1", features = ["cookie"] }
 jsonwebtoken = "9.3.1"
 chrono = "0.4.40"
 dotenvy = "0.15.7"
-lazy_static = "1.5.0"
 #Enable async
 tokio = { version = "1.44.2", features = ["full"] }
 #Enable trait that has async fn become compitible to (dyn trait)
