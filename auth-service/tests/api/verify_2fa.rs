@@ -115,6 +115,14 @@ async fn should_return_401_if_old_code() {
     let first_login_response = app.post_login(&login_body).await;
     assert_eq!(first_login_response.status(), StatusCode::PARTIAL_CONTENT);
 
+    let first_login_2fa_code = app
+        .two_fa_code_store
+        .read()
+        .await
+        .get_code(&email)
+        .await
+        .unwrap();
+
     let second_login_response = app.post_login(&login_body).await;
     assert_eq!(second_login_response.status(), StatusCode::PARTIAL_CONTENT);
 
@@ -125,8 +133,8 @@ async fn should_return_401_if_old_code() {
 
     let incorrect_two_fa_payload = json!({
         "email": email,
-        "loginAttemptId": two_fa_auth_response.login_attempt_id,
-        "2FACode": "123456"
+        "loginAttemptId": first_login_2fa_code.0,
+        "2FACode": first_login_2fa_code.1
     });
 
     let two_fa_result = app.post_verify_2fa(&incorrect_two_fa_payload).await;
