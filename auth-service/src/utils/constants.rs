@@ -6,6 +6,16 @@ pub const JWT_COOKIE_NAME: &str = "jwt";
 
 // Define lazily evaluated static. Lazy_static is needed because std_env::var is not a const function.
 pub static JWT_SECRET: LazyLock<String> = LazyLock::new(set_token);
+pub static DATABASE_URL: LazyLock<String> = LazyLock::new(get_db_url);
+
+fn get_db_url() -> String {
+    dotenv().ok();
+    let url = std_env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    if url.is_empty() {
+        panic!("DATABASE_URL must be set");
+    }
+    url
+}
 
 fn set_token() -> String {
     dotenv().ok(); // Load environment variables
