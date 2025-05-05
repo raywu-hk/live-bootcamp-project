@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
+use sqlx::Type;
 use validator::ValidateEmail;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Eq, Hash, Type)]
+#[sqlx(transparent)]
 pub struct Email(String);
 
 impl Email {
@@ -10,6 +12,12 @@ impl Email {
             return Err(format!("{} is not a valid email.", email));
         }
         Ok(Email(email.to_owned()))
+    }
+}
+
+impl From<String> for Email {
+    fn from(email: String) -> Self {
+        Self(email)
     }
 }
 
@@ -22,7 +30,7 @@ impl AsRef<str> for Email {
 //RUST_LOG=info cargo test email::tests -- --nocapture
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::Email;
     use fake::faker::internet::en::{DomainSuffix, FreeEmail};
     use fake::Fake;
     //use log::info;
@@ -38,7 +46,7 @@ mod tests {
         //info!("testing email: {}", email);
         let result = Email::parse(&email);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Email(email));
+        assert_eq!(result.unwrap(), Email::from(email));
     }
 
     #[test]

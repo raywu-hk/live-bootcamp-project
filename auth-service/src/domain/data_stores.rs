@@ -1,4 +1,5 @@
 use crate::domain::Email;
+use crate::{Password, User};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -68,10 +69,8 @@ impl Default for TwoFACode {
     fn default() -> Self {
         // Use the `rand` crate to generate a random 2FA code.
         // The code should be 6 digits (ex: 834629)
-        let mut rng = rand::rng();
-        let code = (0..6)
-            .map(|_| rng.random_range(0..=9).to_string())
-            .collect();
+        let mut rng = rand::thread_rng();
+        let code = (0..6).map(|_| rng.gen_range(0..=9).to_string()).collect();
         TwoFACode(code)
     }
 }
@@ -80,4 +79,20 @@ impl AsRef<str> for TwoFACode {
     fn as_ref(&self) -> &str {
         &self.0
     }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum UserStoreError {
+    UserAlreadyExists,
+    UserNotFound,
+    InvalidCredentials,
+    UnexpectedError,
+}
+
+#[async_trait::async_trait]
+pub trait UserStore {
+    async fn add_user(&mut self, user: User) -> Result<(), UserStoreError>;
+    async fn get_user(&self, email: &Email) -> Result<User, UserStoreError>;
+    async fn validate_user(&self, email: &Email, password: &Password)
+        -> Result<(), UserStoreError>;
 }

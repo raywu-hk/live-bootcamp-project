@@ -126,18 +126,13 @@ async fn should_return_401_if_old_code() {
     let second_login_response = app.post_login(&login_body).await;
     assert_eq!(second_login_response.status(), StatusCode::PARTIAL_CONTENT);
 
-    let two_fa_auth_response = first_login_response
-        .json::<TwoFactorAuthResponse>()
-        .await
-        .unwrap();
-
-    let incorrect_two_fa_payload = json!({
+    let reuse_two_fa_payload = json!({
         "email": email,
         "loginAttemptId": first_login_2fa_code.0,
         "2FACode": first_login_2fa_code.1
     });
 
-    let two_fa_result = app.post_verify_2fa(&incorrect_two_fa_payload).await;
+    let two_fa_result = app.post_verify_2fa(&reuse_two_fa_payload).await;
 
     assert_eq!(two_fa_result.status(), StatusCode::UNAUTHORIZED);
 }

@@ -1,4 +1,7 @@
-#[derive(Debug, PartialEq, Clone, Eq)]
+use sqlx::Type;
+
+#[derive(Debug, PartialEq, Clone, Eq, Type)]
+#[sqlx(transparent)]
 pub struct Password(String);
 
 impl Password {
@@ -7,6 +10,12 @@ impl Password {
             return Err("Failed to parse string to a Password type".to_owned());
         }
         Ok(Self(password.to_string()))
+    }
+}
+
+impl From<String> for Password {
+    fn from(s: String) -> Self {
+        Self(s)
     }
 }
 

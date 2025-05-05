@@ -1,4 +1,4 @@
-use crate::domain::{Email, Password, User, UserStoreError, UserStores};
+use crate::domain::{Email, Password, User, UserStore, UserStoreError};
 use std::collections::HashMap;
 
 #[derive(Default)]
@@ -6,7 +6,7 @@ pub struct HashmapUserStore {
     users: HashMap<Email, User>,
 }
 #[async_trait::async_trait]
-impl UserStores for HashmapUserStore {
+impl UserStore for HashmapUserStore {
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
         // Return `UserStoreError::UserAlreadyExists` if the user already exists,
         // otherwise insert the user into the hashmap and return `Ok(())`.
@@ -53,7 +53,7 @@ impl UserStores for HashmapUserStore {
 // Add unit tests for your `HashmapUserStore` implementation
 #[cfg(test)]
 mod tests {
-    use crate::domain::{Email, Password, User, UserStores};
+    use crate::domain::{Email, Password, User, UserStore};
     use crate::services::hashmap_user_store::{HashmapUserStore, UserStoreError};
 
     #[tokio::test]
