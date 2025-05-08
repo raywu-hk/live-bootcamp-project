@@ -1,17 +1,19 @@
 use crate::helpers::TestApp;
+use auth_service::Email;
 use auth_service::routes::TwoFactorAuthResponse;
 use auth_service::utils::JWT_COOKIE_NAME;
-use auth_service::Email;
 use reqwest::StatusCode;
 use serde_json::json;
+//use test_macro::clean_up;
 
+//#[clean_up]
 #[tokio::test]
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = TestApp::get_random_email();
 
-    let signup_body = serde_json::json!({
+    let signup_body = json!({
         "email": random_email,
         "password": "password123",
         "requires2FA": false
@@ -21,7 +23,7 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
 
     assert_eq!(response.status().as_u16(), 201);
 
-    let login_body = serde_json::json!({
+    let login_body = json!({
         "email": random_email,
         "password": "password123",
     });
@@ -36,11 +38,12 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
         .expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
+    app.clean_up().await;
 }
-
+//#[clean_up]
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
     let payload = json!({
           "password": "password",
     });
@@ -48,11 +51,13 @@ async fn should_return_422_if_malformed_credentials() {
     let response = app.post_login(&payload).await;
 
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
-}
 
+    app.clean_up().await;
+}
+//#[clean_up]
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
     let signup_payload = json!({
         "email": "user@example.com",
         "password": "password",
@@ -71,11 +76,12 @@ async fn should_return_400_if_invalid_input() {
     let login_result = app.post_login(&login_payload).await;
 
     assert_eq!(login_result.status(), StatusCode::BAD_REQUEST);
+    app.clean_up().await;
 }
-
+//#[clean_up]
 #[tokio::test]
 async fn should_return_401_if_incorrect_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
     let signup_payload = json!({
         "email": "user@example.com",
         "password": "password",
@@ -93,11 +99,12 @@ async fn should_return_401_if_incorrect_credentials() {
     let login_result = app.post_login(&login_payload).await;
 
     assert_eq!(login_result.status(), StatusCode::UNAUTHORIZED);
+    app.clean_up().await;
 }
-
+//#[clean_up]
 #[tokio::test]
 async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
     let signup_payload = json!({
         "email": "user@example.com",
         "password": "password",
@@ -107,7 +114,7 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
 
     assert_eq!(signup_result.status(), StatusCode::CREATED);
 
-    let login_body = serde_json::json!({
+    let login_body = json!({
         "email": "user@example.com",
         "password": "password"
     });
@@ -132,4 +139,5 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
         .expect("Could not get code");
 
     assert_eq!(json_body.login_attempt_id, two_fa_tuple.0.as_ref());
+    app.clean_up().await;
 }

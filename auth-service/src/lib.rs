@@ -5,8 +5,8 @@ use axum::routing::post;
 use axum::serve::Serve;
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
-use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
 use std::error::Error;
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
@@ -43,7 +43,7 @@ impl Application {
             .allow_credentials(true)
             .allow_origin(allowed_origins);
 
-        let router = axum::Router::new()
+        let router = Router::new()
             .fallback_service(ServeDir::new("assets"))
             .route("/signup", post(signup))
             .route("/login", post(login))
@@ -53,7 +53,7 @@ impl Application {
             .with_state(app_state)
             .layer(cors);
 
-        let listener = tokio::net::TcpListener::bind(address).await?;
+        let listener = TcpListener::bind(address).await?;
         let address = listener.local_addr()?.to_string();
         let server = axum::serve(listener, router);
 

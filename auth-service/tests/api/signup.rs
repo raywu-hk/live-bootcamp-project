@@ -1,10 +1,12 @@
 use crate::helpers::TestApp;
-use auth_service::routes::SignupResponse;
 use auth_service::ErrorResponse;
+use auth_service::routes::SignupResponse;
+//use test_macro::clean_up;
 
+//#[clean_up]
 #[tokio::test]
 async fn should_return_201_if_valid_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
     let random_email = TestApp::get_random_email();
     let valid_payload = serde_json::json!({
         "email": random_email,
@@ -23,11 +25,12 @@ async fn should_return_201_if_valid_input() {
             .expect("Could not deserialize response body to UserBody"),
         expected_response
     );
+    app.clean_up().await;
 }
-
+//#[clean_up]
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
     let random_email = TestApp::get_random_email();
     let test_cases = [
         serde_json::json!({
@@ -59,11 +62,12 @@ async fn should_return_422_if_malformed_input() {
             test_case
         );
     }
+    app.clean_up().await;
 }
-
+//#[clean_up]
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     // The signup route should return a 400 HTTP status code if an invalid input is sent.
     // The input is considered invalid if:
@@ -102,12 +106,13 @@ async fn should_return_400_if_invalid_input() {
             "Invalid credentials".to_owned()
         );
     }
+    app.clean_up().await;
 }
-
+//#[clean_up]
 #[tokio::test]
 async fn should_return_409_if_email_already_exists() {
     // Call the signup route twice. The second request should fail with a 409 HTTP status code
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
     let email_test_cases = [serde_json::json!({
         "email": "test@test.com",
         "password": "8".repeat(8),
@@ -128,4 +133,6 @@ async fn should_return_409_if_email_already_exists() {
             .error,
         "User already exists".to_owned()
     );
+
+    app.clean_up().await;
 }

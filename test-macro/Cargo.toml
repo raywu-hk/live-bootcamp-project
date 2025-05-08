@@ -1,0 +1,12 @@
+[package]
+name = "test-macro"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+#for proc macro
+syn = { version = "2.0.101", features = ["full"] }
+darling = "0.20.11"
+
+[lib]
+proc-macro = true

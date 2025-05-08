@@ -1,7 +1,7 @@
 [package]
 name = "auth-service"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,8 +11,8 @@ axum = "0.8.3"
 #The cookie feature enables the CookieJar extractor to view and set cookies.
 axum-extra = { version = "0.10.1", features = ["cookie"] }
 jsonwebtoken = "9.3.1"
-chrono = "0.4.40"
-dotenvy = "0.15.7"
+chrono = "0.4.40"#time library
+dotenvy = "0.15.7"#env
 #Enable async
 tokio = { version = "1.44.2", features = ["full"] }
 #Enable trait that has async fn become compitible to (dyn trait)
@@ -26,6 +26,7 @@ log = "0.4.27"
 env_logger = "0.11.8"
 rand = "0.8.5"
 sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "migrate"] }
+#for password hash
 argon2 = { version = "0.5.3", features = ["std"] }
 password-hash = "0.6.0-rc.0"
 
