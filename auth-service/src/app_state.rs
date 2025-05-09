@@ -1,11 +1,11 @@
-use crate::domain::{BannableTokenStore, TwoFACodeStore, UserStore};
 use crate::EmailClient;
+use crate::domain::{BannedTokenStore, TwoFACodeStore, UserStore};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 // Using a type alias to improve readability!
 pub type UserStoreType = Arc<RwLock<dyn UserStore + Send + Sync>>;
-pub type BannedStoreType = Arc<RwLock<dyn BannableTokenStore + Send + Sync>>;
+pub type BannedStoreType = Arc<RwLock<dyn BannedTokenStore + Send + Sync>>;
 pub type TwoFACodeStoreType = Arc<RwLock<dyn TwoFACodeStore + Send + Sync>>;
 pub type EmailClientType = Arc<dyn EmailClient + Send + Sync>;
 #[derive(Clone)]

@@ -1,10 +1,10 @@
+use crate::AppState;
 use crate::domain::AuthAPIError;
 use crate::utils::validate_token;
-use crate::AppState;
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -21,9 +21,15 @@ pub async fn verify_token(
         .await
         .map_err(|_| AuthAPIError::InvalidToken)?;
 
-    let banned_token_store = state.banned_token_store.read().await;
-    if banned_token_store.is_banned(&token).await {
-        return Err(AuthAPIError::InvalidToken);
+    match state
+        .banned_token_store
+        .read()
+        .await
+        .contains_token(&token)
+        .await
+        .map_err(|_| AuthAPIError::UnexpectedError)?
+    {
+        true => Err(AuthAPIError::InvalidToken),
+        false => Ok(StatusCode::OK.into_response()),
     }
-    Ok(StatusCode::OK.into_response())
 }

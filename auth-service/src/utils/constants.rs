@@ -3,14 +3,15 @@ use std::env as std_env;
 use std::sync::LazyLock;
 
 pub const JWT_COOKIE_NAME: &str = "jwt";
+pub const DEFAULT_REDIS_HOSTNAME: &str = "127.0.0.1";
 
 // Define lazily evaluated static. Lazy_static is needed because std_env::var is not a const function.
 pub static JWT_SECRET: LazyLock<String> = LazyLock::new(set_token);
 pub static DATABASE_URL: LazyLock<String> = LazyLock::new(get_db_url);
-
+pub static REDIS_HOST_NAME: LazyLock<String> = LazyLock::new(set_redis_host);
 fn get_db_url() -> String {
     dotenv().ok();
-    let url = std_env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let url = std_env::var(env::DATABASE_URL_ENV_VAR).expect("DATABASE_URL must be set");
     if url.is_empty() {
         panic!("DATABASE_URL must be set");
     }
@@ -26,8 +27,15 @@ fn set_token() -> String {
     secret
 }
 
+fn set_redis_host() -> String {
+    dotenv().ok();
+    std_env::var(env::REDIS_HOST_NAME_ENV_VAR).unwrap_or(DEFAULT_REDIS_HOSTNAME.to_owned())
+}
+
 pub mod env {
+    pub const DATABASE_URL_ENV_VAR: &str = "DATABASE_URL";
     pub const JWT_SECRET_ENV_VAR: &str = "JWT_SECRET";
+    pub const REDIS_HOST_NAME_ENV_VAR: &str = "REDIS_HOST_NAME";
 }
 
 pub mod prod {

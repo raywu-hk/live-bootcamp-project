@@ -1,37 +1,24 @@
-use crate::domain::{Bannable, BannableTokenStore, TokenStore, TokenStoreError};
+use crate::domain::{BannedTokenStore, BannedTokenStoreError};
 use std::collections::HashSet;
+
 #[derive(Default)]
 pub struct HashSetBannedTokenStore {
     tokens: HashSet<String>,
 }
 #[async_trait::async_trait]
-impl BannableTokenStore for HashSetBannedTokenStore {}
-#[async_trait::async_trait]
-impl TokenStore for HashSetBannedTokenStore {
-    async fn add_token(&mut self, token: &str) -> Result<(), TokenStoreError> {
+impl BannedTokenStore for HashSetBannedTokenStore {
+    async fn add_token(&mut self, token: &str) -> Result<(), BannedTokenStoreError> {
         self.tokens.insert(token.to_string());
         Ok(())
     }
-
-    async fn remove_token(&mut self, token: &str) -> Result<(), TokenStoreError> {
-        if self.tokens.remove(token) {
-            Ok(())
-        } else {
-            Err(TokenStoreError::UnexpectedError)
-        }
-    }
-}
-
-#[async_trait::async_trait]
-impl Bannable for HashSetBannedTokenStore {
-    async fn is_banned(&self, token: &str) -> bool {
-        self.tokens.contains(token)
+    async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError> {
+        Ok(self.tokens.contains(token))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::{Bannable, TokenStore};
+    use crate::domain::BannedTokenStore;
     use crate::services::hashset_banned_token_store::HashSetBannedTokenStore;
 
     #[tokio::test]
@@ -41,8 +28,8 @@ mod tests {
         let result = token_store.add_token("token").await;
         assert!(result.is_ok());
 
-        let result = token_store.is_banned("token").await;
-        assert!(result);
+        let result = token_store.contains_token("token").await;
+        assert_eq!(result, Ok(true));
     }
     #[tokio::test]
     async fn test_add_token() {
@@ -58,24 +45,5 @@ mod tests {
         let _result = token_store.add_token("token").await;
         let result = token_store.add_token("token").await;
         assert!(result.is_ok());
-    }
-    #[tokio::test]
-    async fn test_remove_token() {
-        let mut token_store = HashSetBannedTokenStore::default();
-
-        let result = token_store.add_token("token").await;
-        assert!(result.is_ok());
-
-        let result = token_store.remove_token("token").await;
-        assert!(result.is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_remove_token_not_exist() {
-        let mut token_store = HashSetBannedTokenStore::default();
-
-        let result = token_store.remove_token("nonexistent").await;
-
-        assert!(result.is_err());
     }
 }
