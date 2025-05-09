@@ -1,8 +1,8 @@
 use auth_service::utils::test::APP_ADDRESS;
 use auth_service::utils::{DATABASE_URL, REDIS_HOST_NAME};
 use auth_service::{
-    AppState, Application, BannedStoreType, HashmapTwoFACodeStore, MockEmailClient,
-    PostgresUserStore, RedisBannedTokenStore, TwoFACodeStoreType, get_postgres_pool,
+    AppState, Application, BannedStoreType, MockEmailClient, PostgresUserStore,
+    RedisBannedTokenStore, RedisTwoFACodeStore, TwoFACodeStoreType, get_postgres_pool,
     get_redis_client,
 };
 use reqwest::Client;
@@ -19,7 +19,7 @@ pub struct TestApp {
     pub cookie_jar: Arc<Jar>,
     pub banned_token_store: BannedStoreType,
     pub two_fa_code_store: TwoFACodeStoreType,
-    pub http_client: reqwest::Client,
+    pub http_client: Client,
     pub db_name: String,
     pub clean_up_called: bool,
 }
@@ -31,7 +31,7 @@ impl TestApp {
         let user_store = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));
         let banned_token_store =
             Arc::new(RwLock::new(RedisBannedTokenStore::new(redis_pool.clone())));
-        let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
+        let two_fa_code_store = Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_pool.clone())));
         let mock_email_client = Arc::new(MockEmailClient {});
         let app_state = AppState::new(
             user_store.clone(),
@@ -220,10 +220,6 @@ impl TestApp {
             .execute(format!(r#"DROP DATABASE "{}";"#, db_name).as_str())
             .await
             .expect("Failed to drop the database.");
-    }
-    async fn cleanup_redis_db() {
-        let mut conn = Self::configure_redis().await;
-        redis::cmd("FLUSHDB").execute(&mut conn)
     }
     pub async fn clean_up(&mut self) {
         Self::delete_database(&self.db_name).await;
