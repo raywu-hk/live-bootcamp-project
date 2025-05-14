@@ -1,9 +1,9 @@
-use crate::domain::{AuthAPIError, Email, Password, User};
 use crate::AppState;
+use crate::domain::{AuthAPIError, Email, Password, User};
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
@@ -17,6 +17,7 @@ pub struct SignupRequest {
 pub struct SignupResponse {
     pub message: String,
 }
+#[tracing::instrument(name = "Signup", skip_all, err(Debug))]
 pub async fn signup(
     // Use Axum's state extractor to pass in AppState
     state: State<AppState>,

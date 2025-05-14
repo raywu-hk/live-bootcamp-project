@@ -1,5 +1,5 @@
 use auth_service::utils::prod::APP_ADDRESS;
-use auth_service::utils::{DATABASE_URL, REDIS_HOST_NAME};
+use auth_service::utils::{DATABASE_URL, REDIS_HOST_NAME, init_tracing};
 use auth_service::{
     AppState, Application, MockEmailClient, PostgresUserStore, RedisBannedTokenStore,
     RedisTwoFACodeStore, get_postgres_pool, get_redis_client,
@@ -10,6 +10,7 @@ use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() {
+    init_tracing();
     let pg_pool = configure_postqresql().await;
     let redis_conn = Arc::new(RwLock::new(configure_redis()));
     let user_store = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));

@@ -12,6 +12,7 @@ use std::error::Error;
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
+use tower_http::trace::TraceLayer;
 
 mod app_state;
 pub mod domain;
@@ -19,6 +20,7 @@ pub use domain::*;
 pub mod routes;
 mod services;
 pub mod utils;
+use crate::utils::{make_span_with_request_id, on_request, on_response};
 pub use app_state::*;
 pub use services::*;
 
@@ -44,6 +46,11 @@ impl Application {
             .allow_credentials(true)
             .allow_origin(allowed_origins);
 
+        let trace_layer = TraceLayer::new_for_http()
+            .make_span_with(make_span_with_request_id)
+            .on_request(on_request)
+            .on_response(on_response);
+
         let router = Router::new()
             .fallback_service(ServeDir::new("assets"))
             .route("/signup", post(signup))
@@ -52,7 +59,8 @@ impl Application {
             .route("/verify-token", post(verify_token))
             .route("/verify-2fa", post(verify_2fa))
             .with_state(app_state)
-            .layer(cors);
+            .layer(cors)
+            .layer(trace_layer);
 
         let listener = TcpListener::bind(address).await?;
         let address = listener.local_addr()?.to_string();
@@ -63,7 +71,7 @@ impl Application {
     }
 
     pub async fn run(self) -> Result<(), std::io::Error> {
-        println!("listening on {}", &self.address);
+        tracing::info!("listening on {}", &self.address);
         self.server.await
     }
 }
