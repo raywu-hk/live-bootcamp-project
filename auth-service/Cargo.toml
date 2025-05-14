@@ -32,7 +32,17 @@ password-hash = "0.6.0-rc.0"
 redis = { version = "0.25.4", features = ["tokio-comp"] }
 #Observability
 tracing = "0.1.41"
-tracing-subscriber = "0.3.19"
+tracing-subscriber = { version = "0.3.19", features = ["registry", "env-filter"] }
+#Error handling
+#Crate allows us to easily implement the Error trait on our custom error types.
+#Without this crate, we would have to write a fair bit of boilerplate.
+#Implementing the Error trait will enable our custom errors to work with other Rust error-handling libraries
+#like color_eyre.
+thiserror = "2.0.12"
+color-eyre = "0.6.4"
+tracing-error = "0.2.1"
+
+
 [dev-dependencies]
 reqwest = { version = "0.12.15", default-features = false, features = ["json", "cookies"] }
 fake = "=2.3.0"

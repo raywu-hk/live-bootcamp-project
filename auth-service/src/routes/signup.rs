@@ -4,8 +4,8 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use color_eyre::Result;
 use serde::{Deserialize, Serialize};
-
 #[derive(Deserialize)]
 pub struct SignupRequest {
     pub email: String,
@@ -17,7 +17,7 @@ pub struct SignupRequest {
 pub struct SignupResponse {
     pub message: String,
 }
-#[tracing::instrument(name = "Signup", skip_all, err(Debug))]
+#[tracing::instrument(name = "Signup", skip_all)]
 pub async fn signup(
     // Use Axum's state extractor to pass in AppState
     state: State<AppState>,
@@ -35,8 +35,8 @@ pub async fn signup(
     }
 
     // Add `user` to the `user_store`. Simply unwrap the returned `Result` enum type for now.
-    if user_store.add_user(user).await.is_err() {
-        return Err(AuthAPIError::UnexpectedError);
+    if let Err(e) = user_store.add_user(user).await {
+        return Err(AuthAPIError::UnexpectedError(e.into()));
     }
 
     let response = Json(SignupResponse {

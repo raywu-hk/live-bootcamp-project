@@ -5,8 +5,9 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use color_eyre::Result;
+use color_eyre::eyre::eyre;
 use serde::Deserialize;
-
 #[derive(Deserialize)]
 pub struct VerifyTokenRequest {
     token: String,
@@ -27,9 +28,9 @@ pub async fn verify_token(
         .await
         .contains_token(&token)
         .await
-        .map_err(|_| AuthAPIError::UnexpectedError)?
     {
-        true => Err(AuthAPIError::InvalidToken),
-        false => Ok(StatusCode::OK.into_response()),
+        Ok(true) => Err(AuthAPIError::InvalidToken),
+        Ok(false) => Ok(StatusCode::OK.into_response()),
+        Err(_) => Err(AuthAPIError::UnexpectedError(eyre!("oh no"))),
     }
 }
