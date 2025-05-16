@@ -13,12 +13,13 @@ pub struct VerifyTokenRequest {
     token: String,
 }
 
+#[tracing::instrument(name = "Verify Token", skip_all)]
 pub async fn verify_token(
     state: State<AppState>,
     Json(request): Json<VerifyTokenRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
     let token = request.token;
-    validate_token(&token)
+    validate_token(&token, state.banned_token_store.clone())
         .await
         .map_err(|_| AuthAPIError::InvalidToken)?;
 

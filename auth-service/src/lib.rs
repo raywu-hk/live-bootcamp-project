@@ -1,4 +1,4 @@
-use crate::routes::{signup, verify_token};
+use crate::routes::{login, logout, signup, verify_2fa, verify_token};
 use axum::http::{Method, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::post;
@@ -54,10 +54,10 @@ impl Application {
         let router = Router::new()
             .fallback_service(ServeDir::new("assets"))
             .route("/signup", post(signup))
-            // .route("/login", post(login))
-            // .route("/logout", post(logout))
+            .route("/login", post(login))
+            .route("/logout", post(logout))
             .route("/verify-token", post(verify_token))
-            // .route("/verify-2fa", post(verify_2fa))
+            .route("/verify-2fa", post(verify_2fa))
             .with_state(app_state)
             .layer(cors)
             .layer(trace_layer);

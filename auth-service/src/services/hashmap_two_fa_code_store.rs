@@ -1,4 +1,6 @@
 use crate::domain::{Email, LoginAttemptId, TwoFACode, TwoFACodeStore, TwoFACodeStoreError};
+use color_eyre::Result;
+use color_eyre::eyre::eyre;
 use std::collections::HashMap;
 
 #[derive(Default)]
@@ -20,10 +22,12 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
     }
 
     async fn remove_code(&mut self, email: &Email) -> Result<(), TwoFACodeStoreError> {
-        match self.codes.remove(email) {
-            Some(_) => Ok(()),
-            None => Err(TwoFACodeStoreError::UnexpectedError),
+        if self.codes.remove(email).is_none() {
+            Err(TwoFACodeStoreError::UnexpectedError(eyre!(
+                "Email not found in HashmapTwoFACodeStore"
+            )))?
         }
+        Ok(())
     }
 
     async fn get_code(
@@ -32,7 +36,9 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
     ) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError> {
         match self.codes.get(email) {
             Some(v) => Ok(v.clone()),
-            None => Err(TwoFACodeStoreError::UnexpectedError),
+            None => Err(TwoFACodeStoreError::UnexpectedError(eyre!(
+                "Email not found in HashmapTwoFACodeStore"
+            ))),
         }
     }
 }
@@ -91,6 +97,9 @@ mod tests {
 
         let result = store.get_code(&email).await;
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), TwoFACodeStoreError::UnexpectedError);
+        assert_eq!(
+            result.unwrap_err(),
+            TwoFACodeStoreError::UnexpectedError(eyre!("Email not found in HashmapTwoFACodeStore"))
+        );
     }
 }

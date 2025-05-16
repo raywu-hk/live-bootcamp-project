@@ -1,6 +1,21 @@
-#[derive(Debug, PartialEq)]
+use color_eyre::Report;
+use color_eyre::Result;
+use thiserror::Error;
+#[derive(Debug, Error)]
 pub enum BannedTokenStoreError {
-    UnexpectedError,
+    #[error("Unexpected Error")]
+    UnexpectedError(#[source] Report),
+}
+impl PartialEq for BannedTokenStoreError {
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (
+                BannedTokenStoreError::UnexpectedError(_),
+                BannedTokenStoreError::UnexpectedError(_)
+            )
+        )
+    }
 }
 #[async_trait::async_trait]
 pub trait BannedTokenStore {

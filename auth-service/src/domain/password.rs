@@ -1,13 +1,14 @@
+use color_eyre::Result;
+use color_eyre::eyre::eyre;
 use sqlx::Type;
-
 #[derive(Debug, PartialEq, Clone, Eq, Type)]
 #[sqlx(transparent)]
 pub struct Password(String);
 
 impl Password {
-    pub fn parse(password: &str) -> Result<Self, String> {
+    pub fn parse(password: &str) -> Result<Self> {
         if password.len() < 8 {
-            return Err("Failed to parse string to a Password type".to_owned());
+            return Err(eyre!("Failed to parse string to a Password type"));
         }
         Ok(Self(password.to_string()))
     }

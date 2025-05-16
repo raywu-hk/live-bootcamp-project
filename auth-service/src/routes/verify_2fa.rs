@@ -1,12 +1,12 @@
 use crate::utils::generate_auth_cookie;
 use crate::{AppState, AuthAPIError, Email, LoginAttemptId, TwoFACode};
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 use axum_extra::extract::CookieJar;
+use color_eyre::Result;
 use serde::{Deserialize, Serialize};
-
 // Implement the Verify2FARequest struct. See the verify-2fa route contract in step 1 for the expected JSON body.
 #[derive(Serialize, Deserialize)]
 pub struct Verify2FARequest {
@@ -17,6 +17,7 @@ pub struct Verify2FARequest {
     two_fa_code: String,
 }
 
+#[tracing::instrument(name = "Validate Two FA", skip_all)]
 pub async fn verify_2fa(
     State(state): State<AppState>,
     jar: CookieJar,
@@ -48,8 +49,8 @@ pub async fn verify_2fa(
             two_fa_code_store
                 .remove_code(&email)
                 .await
-                .map_err(|_| AuthAPIError::UnexpectedError)?;
-            let cookie = generate_auth_cookie(&email).map_err(|_| AuthAPIError::UnexpectedError)?;
+                .map_err(|e| AuthAPIError::UnexpectedError(e.into()))?;
+            let cookie = generate_auth_cookie(&email).map_err(AuthAPIError::UnexpectedError)?;
             let updated_jar = jar.add(cookie);
             Ok((updated_jar, StatusCode::OK.into_response()))
         }

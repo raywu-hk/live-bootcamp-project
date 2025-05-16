@@ -1,15 +1,16 @@
+use color_eyre::Result;
+use color_eyre::eyre::eyre;
 use serde::{Deserialize, Serialize};
 use sqlx::Type;
 use validator::ValidateEmail;
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Eq, Hash, Type)]
 #[sqlx(transparent)]
 pub struct Email(String);
 
 impl Email {
-    pub fn parse(email: &str) -> Result<Self, String> {
+    pub fn parse(email: &str) -> Result<Self> {
         if !ValidateEmail::validate_email(&email) {
-            return Err(format!("{} is not a valid email.", email));
+            return Err(eyre!("{} is not a valid email.", email));
         }
         Ok(Email(email.to_owned()))
     }
@@ -31,8 +32,8 @@ impl AsRef<str> for Email {
 #[cfg(test)]
 mod tests {
     use crate::Email;
-    use fake::faker::internet::en::{DomainSuffix, FreeEmail};
     use fake::Fake;
+    use fake::faker::internet::en::{DomainSuffix, FreeEmail};
     //use log::info;
 
     fn init() {

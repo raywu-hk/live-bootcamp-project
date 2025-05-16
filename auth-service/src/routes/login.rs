@@ -1,11 +1,11 @@
 use crate::domain::{AuthAPIError, Email, Password};
-use crate::{utils, AppState, LoginAttemptId, TwoFACode};
+use crate::{AppState, LoginAttemptId, TwoFACode, utils};
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::{response::IntoResponse, Json};
+use axum::{Json, response::IntoResponse};
 use axum_extra::extract::CookieJar;
+use color_eyre::Result;
 use serde::{Deserialize, Serialize};
-
 // The login route can return 2 possible success responses.
 // This enum models each response!
 #[derive(Debug, Serialize)]
@@ -29,6 +29,7 @@ pub struct TwoFactorAuthResponse {
     pub login_attempt_id: String,
 }
 
+#[tracing::instrument(name = "Login", skip_all)]
 pub async fn login(
     state: State<AppState>,
     jar: CookieJar,
@@ -51,7 +52,7 @@ pub async fn login(
 
     let user = match user_store.get_user(&email).await {
         Ok(user) => user,
-        Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
+        Err(e) => return (jar, Err(AuthAPIError::UnexpectedError(e.into()))),
     };
 
     match user.requires_2fa {
@@ -60,6 +61,7 @@ pub async fn login(
     }
 }
 
+#[tracing::instrument(name = "Handling 2fa", skip_all)]
 async fn handle_2fa(
     email: &Email,
     state: &AppState,
@@ -71,21 +73,19 @@ async fn handle_2fa(
     let login_attempt_id = LoginAttemptId::default();
     let two_fa_code = TwoFACode::default();
     let mut two_fa_store = state.two_fa_code_store.write().await;
-    if two_fa_store
+    if let Err(e) = two_fa_store
         .add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone())
         .await
-        .is_err()
     {
-        return (jar, Err(AuthAPIError::UnexpectedError));
+        return (jar, Err(AuthAPIError::UnexpectedError(e.into())));
     }
-    //send 2FA code via the email client. Return `AuthAPIError::UnexpectedError` if the operation fails.
-    if state
+    //Send 2FA code via the email client. Return `AuthAPIError::UnexpectedError` if the operation fails.
+    if let Err(e) = state
         .email_client
         .send_email(email, "2FA_Code", two_fa_code.as_ref())
         .await
-        .is_err()
     {
-        return (jar, Err(AuthAPIError::UnexpectedError));
+        return (jar, Err(AuthAPIError::UnexpectedError(e)));
     }
     // Return a TwoFactorAuthResponse. The message should be "2FA required".
     // The login attempt ID should be "123456". We will replace this hard-coded login attempt ID soon!
@@ -96,6 +96,7 @@ async fn handle_2fa(
     (jar, Ok((StatusCode::PARTIAL_CONTENT, Json(response))))
 }
 
+#[tracing::instrument(name = "Handling no 2fa", skip_all)]
 async fn handle_no_2fa(
     email: &Email,
     jar: CookieJar,
@@ -107,7 +108,7 @@ async fn handle_no_2fa(
     // If the function call fails, return AuthAPIError::UnexpectedError.
     let auth_cookie = match utils::generate_auth_cookie(email) {
         Ok(cookie) => cookie,
-        Err(_) => return (jar, Err(AuthAPIError::IncorrectCredentials)),
+        Err(e) => return (jar, Err(AuthAPIError::UnexpectedError(e))),
     };
 
     let updated_jar = jar.add(auth_cookie);
