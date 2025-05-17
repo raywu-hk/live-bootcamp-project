@@ -42,6 +42,8 @@ thiserror = "2.0.12"
 color-eyre = "0.6.4"
 tracing-error = "0.2.1"
 
+secrecy = { version = "0.10.3", features = ["serde"] }
+
 
 [dev-dependencies]
 reqwest = { version = "0.12.15", default-features = false, features = ["json", "cookies"] }

@@ -55,12 +55,13 @@ impl UserStore for HashmapUserStore {
 mod tests {
     use crate::domain::{Email, Password, User, UserStore};
     use crate::services::hashmap_user_store::{HashmapUserStore, UserStoreError};
+    use secrecy::SecretString;
 
     #[tokio::test]
     async fn test_add_user() {
         let mut user_store = HashmapUserStore::default();
-        let email = Email::parse("test@test.com").unwrap();
-        let password = Password::parse("password").unwrap();
+        let email = Email::parse(SecretString::from("test@test.com")).unwrap();
+        let password = Password::parse(SecretString::from("password")).unwrap();
         let user = User::new(email.clone(), password.clone(), false);
 
         let result = user_store.add_user(user).await;
@@ -71,14 +72,14 @@ mod tests {
     #[tokio::test]
     async fn test_get_user() {
         let mut user_store = HashmapUserStore::default();
-        let email = Email::parse("test@test.com").unwrap();
-        let password = Password::parse("password").unwrap();
+        let email = Email::parse(SecretString::from("test@test.com")).unwrap();
+        let password = Password::parse(SecretString::from("password")).unwrap();
         let user = User::new(email.clone(), password.clone(), false);
         let result = user_store.add_user(user).await;
         assert!(result.is_ok());
 
         let result = user_store
-            .get_user(&Email::parse("notExist@notExist.com").unwrap())
+            .get_user(&Email::parse(SecretString::from("notExist@notExist.com")).unwrap())
             .await;
         assert_eq!(result, Err(UserStoreError::UserNotFound));
     }
@@ -86,24 +87,24 @@ mod tests {
     #[tokio::test]
     async fn test_validate_user() {
         let mut user_store = HashmapUserStore::default();
-        let email = Email::parse("test@test.com").unwrap();
-        let password = Password::parse("password").unwrap();
+        let email = Email::parse(SecretString::from("test@test.com")).unwrap();
+        let password = Password::parse(SecretString::from("password")).unwrap();
         let user = User::new(email.clone(), password.clone(), false);
         let result = user_store.add_user(user).await;
         assert!(result.is_ok());
 
         let result = user_store
             .validate_user(
-                &Email::parse("test@test.com").unwrap(),
-                &Password::parse("password").unwrap(),
+                &Email::parse(SecretString::from("test@test.com")).unwrap(),
+                &Password::parse(SecretString::from("password")).unwrap(),
             )
             .await;
         assert!(result.is_ok());
 
         let result = user_store
             .validate_user(
-                &Email::parse("test@test.com").unwrap(),
-                &Password::parse("wrong_password").unwrap(),
+                &Email::parse(SecretString::from("test@test.com")).unwrap(),
+                &Password::parse(SecretString::from("wrong_password")).unwrap(),
             )
             .await;
         assert_eq!(result, Err(UserStoreError::InvalidCredentials));

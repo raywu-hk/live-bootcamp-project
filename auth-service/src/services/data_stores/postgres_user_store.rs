@@ -3,6 +3,7 @@ use argon2::password_hash::SaltString;
 use argon2::{Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version};
 use color_eyre::Result;
 use color_eyre::eyre::eyre;
+use secrecy::{ExposeSecret, SecretString};
 use sqlx::PgPool;
 pub struct PostgresUserStore {
     pool: PgPool,
@@ -19,7 +20,7 @@ impl UserStore for PostgresUserStore {
     // Implement all required methods. Note that you will need to make SQL queries against our PostgreSQL instance inside these methods.
     #[tracing::instrument(name = "Adding user to PostgreSQL", skip_all)]
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-        let hashed_password = compute_password_hash(user.password.as_ref().to_string())
+        let hashed_password = compute_password_hash(user.password.as_ref().to_owned())
             .await
             .map_err(UserStoreError::UnexpectedError)?;
         /*
@@ -34,8 +35,8 @@ impl UserStore for PostgresUserStore {
         */
         let result = sqlx::query!(
             "insert into users (email,password_hash,requires_2fa) values ($1,$2,$3)",
-            user.email.as_ref(),
-            hashed_password,
+            user.email.as_ref().expose_secret(),
+            &hashed_password.expose_secret(),
             user.requires_2fa
         )
         .execute(&self.pool)
@@ -61,21 +62,23 @@ impl UserStore for PostgresUserStore {
         .await
         .map_err(|_| UserStoreError::UnexpectedError)?;
         */
-        sqlx::query_as!(
-            User,
-            "select users.email, users.password_hash as password, users.requires_2fa from users where email = $1",
-            email.as_ref()
+        sqlx::query!(
+            "select email, password_hash, requires_2fa from users where email = $1",
+            email.as_ref().expose_secret()
         )
-            .fetch_optional(&self.pool)
-            .await
-            .map_err(|e| UserStoreError::UnexpectedError(e.into()))?
-            .map(|user_row|{
-                Ok(User{
-                    email:Email::parse(user_row.email.as_ref()).map_err(|e|UserStoreError::UnexpectedError(eyre!(e)))?,
-                    password:Password::parse(user_row.password.as_ref()).map_err(|e|UserStoreError::UnexpectedError(eyre!(e)))?,
-                    requires_2fa: user_row.requires_2fa,
-                })
-            }).ok_or(UserStoreError::UserNotFound)?
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| UserStoreError::UnexpectedError(e.into()))?
+        .map(|user_row| {
+            Ok(User {
+                email: Email::parse(SecretString::from(user_row.email))
+                    .map_err(|e| UserStoreError::UnexpectedError(eyre!(e)))?,
+                password: Password::parse(SecretString::from(user_row.password_hash))
+                    .map_err(|e| UserStoreError::UnexpectedError(eyre!(e)))?,
+                requires_2fa: user_row.requires_2fa,
+            })
+        })
+        .ok_or(UserStoreError::UserNotFound)?
     }
 
     #[tracing::instrument(name = "Validating user credentials in PostgreSQL", skip_all)]
@@ -93,7 +96,7 @@ impl UserStore for PostgresUserStore {
                     */
         let user = sqlx::query!(
             "select users.email,users.password_hash from users where email = $1",
-            email.as_ref()
+            email.as_ref().expose_secret()
         )
         .fetch_optional(&self.pool)
         .await
@@ -101,9 +104,12 @@ impl UserStore for PostgresUserStore {
 
         match user {
             None => Err(UserStoreError::UserNotFound),
-            Some(row) => verify_password_hash(row.password_hash, password.as_ref().to_string())
-                .await
-                .map_err(|_| UserStoreError::InvalidCredentials),
+            Some(row) => verify_password_hash(
+                SecretString::from(row.password_hash),
+                password.as_ref().to_owned(),
+            )
+            .await
+            .map_err(|_| UserStoreError::InvalidCredentials),
         }
     }
 }
@@ -116,8 +122,8 @@ impl UserStore for PostgresUserStore {
 
 #[tracing::instrument(name = "Verify password hash", skip_all)]
 async fn verify_password_hash(
-    expected_password_hash: String,
-    password_candidate: String,
+    expected_password_hash: SecretString,
+    password_candidate: SecretString,
 ) -> Result<()> {
     // This line retrieves the current span from the tracing context.
     // The span represents the execution context for the compute_password_hash function.
@@ -127,9 +133,12 @@ async fn verify_password_hash(
         // This is especially useful for tracing operations that are performed in a different thread or task, such as within tokio::task::spawn_blocking.
         current_span.in_scope(|| {
             let expected_password_hash: PasswordHash<'_> =
-                PasswordHash::new(&expected_password_hash)?;
+                PasswordHash::new(expected_password_hash.expose_secret())?;
             Argon2::default()
-                .verify_password(password_candidate.as_bytes(), &expected_password_hash)
+                .verify_password(
+                    password_candidate.expose_secret().as_bytes(),
+                    &expected_password_hash,
+                )
                 .map_err(|e| e.into())
         })
     })
@@ -142,7 +151,7 @@ async fn verify_password_hash(
 // separate thread pool using tokio::task::spawn_blocking. Note that you
 // will need to update the input parameters to be String types instead of &str
 #[tracing::instrument(name = "Computing password hash", skip_all)]
-async fn compute_password_hash(password: String) -> Result<String> {
+async fn compute_password_hash(password: SecretString) -> Result<SecretString> {
     let current_span: tracing::Span = tracing::Span::current();
     tokio::task::spawn_blocking(move || {
         current_span.in_scope(|| {
@@ -152,9 +161,9 @@ async fn compute_password_hash(password: String) -> Result<String> {
                 Version::V0x13,
                 Params::new(15000, 2, 1, None)?,
             )
-            .hash_password(password.as_bytes(), &salt)?
+            .hash_password(password.expose_secret().as_bytes(), &salt)?
             .to_string();
-            Ok(password_hash)
+            Ok(SecretString::from(password_hash))
         })
     })
     .await?

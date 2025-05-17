@@ -8,6 +8,8 @@ use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::Cookie;
 use color_eyre::Result;
 use color_eyre::eyre::ContextCompat;
+use secrecy::SecretString;
+
 #[tracing::instrument(name = "Logout", skip_all)]
 pub async fn logout(
     state: State<AppState>,
@@ -20,7 +22,7 @@ pub async fn logout(
         .wrap_err("No Cookie found")
         .map_err(|_| AuthAPIError::MissingToken)?;
 
-    let token = cookie.value().to_owned();
+    let token = SecretString::from(cookie.value());
     // Validate JWT token by calling `validate_token` from the auth service.
     // If the token is valid, you can ignore the returned claims for now.
     // Return AuthAPIError::InvalidToken is validation fails.

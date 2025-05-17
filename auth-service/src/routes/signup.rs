@@ -5,11 +5,12 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use color_eyre::Result;
+use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 #[derive(Deserialize)]
 pub struct SignupRequest {
-    pub email: String,
-    pub password: String,
+    pub email: SecretString,
+    pub password: SecretString,
     #[serde(rename = "requires2FA")]
     pub requires_2fa: bool,
 }
@@ -23,9 +24,9 @@ pub async fn signup(
     state: State<AppState>,
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
-    let email = Email::parse(&request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let email = Email::parse(request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
     let password =
-        Password::parse(&request.password).map_err(|_| AuthAPIError::InvalidCredentials)?;
+        Password::parse(request.password).map_err(|_| AuthAPIError::InvalidCredentials)?;
     // Create a new `User` instance using data in the `request`
     let user = User::new(email, password, request.requires_2fa);
 

@@ -5,6 +5,7 @@ use axum::http::StatusCode;
 use axum::{Json, response::IntoResponse};
 use axum_extra::extract::CookieJar;
 use color_eyre::Result;
+use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 // The login route can return 2 possible success responses.
 // This enum models each response!
@@ -18,7 +19,7 @@ pub enum LoginResponse {
 #[derive(Deserialize)]
 pub struct LoginRequest {
     pub email: String,
-    pub password: String,
+    pub password: SecretString,
 }
 
 // If a user requires 2FA, this JSON body should be returned!
@@ -35,11 +36,11 @@ pub async fn login(
     jar: CookieJar,
     Json(request): Json<LoginRequest>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
-    let email = match Email::parse(&request.email) {
+    let email = match Email::parse(SecretString::from(request.email)) {
         Ok(email) => email,
         Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
     };
-    let password = match Password::parse(&request.password) {
+    let password = match Password::parse(request.password) {
         Ok(password) => password,
         Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
     };
@@ -82,7 +83,7 @@ async fn handle_2fa(
     //Send 2FA code via the email client. Return `AuthAPIError::UnexpectedError` if the operation fails.
     if let Err(e) = state
         .email_client
-        .send_email(email, "2FA_Code", two_fa_code.as_ref())
+        .send_email(email, "2FA_Code", two_fa_code.as_ref().expose_secret())
         .await
     {
         return (jar, Err(AuthAPIError::UnexpectedError(e)));
@@ -91,7 +92,7 @@ async fn handle_2fa(
     // The login attempt ID should be "123456". We will replace this hard-coded login attempt ID soon!
     let response = LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
         message: "2FA required".to_owned(),
-        login_attempt_id: login_attempt_id.as_ref().to_owned(),
+        login_attempt_id: login_attempt_id.as_ref().expose_secret().to_owned(),
     });
     (jar, Ok((StatusCode::PARTIAL_CONTENT, Json(response))))
 }

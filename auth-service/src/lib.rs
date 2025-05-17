@@ -5,6 +5,7 @@ use axum::routing::post;
 use axum::serve::Serve;
 use axum::{Json, Router};
 use redis::{Client, RedisResult};
+use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
@@ -113,9 +114,12 @@ fn log_error_chain(e: &(dyn Error + 'static)) {
     tracing::error!("{}", report);
 }
 
-pub async fn get_postgres_pool(url: &str) -> Result<PgPool, sqlx::Error> {
+pub async fn get_postgres_pool(url: &SecretString) -> Result<PgPool, sqlx::Error> {
     // Create a new PostgreSQL connection pool
-    PgPoolOptions::new().max_connections(5).connect(url).await
+    PgPoolOptions::new()
+        .max_connections(5)
+        .connect(url.expose_secret())
+        .await
 }
 
 pub fn get_redis_client(redis_hostname: String) -> RedisResult<Client> {

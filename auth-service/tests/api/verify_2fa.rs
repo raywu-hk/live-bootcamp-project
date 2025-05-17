@@ -3,6 +3,7 @@ use auth_service::Email;
 use auth_service::routes::TwoFactorAuthResponse;
 use auth_service::utils::JWT_COOKIE_NAME;
 use axum::http::StatusCode;
+use secrecy::{ExposeSecret, SecretString};
 use serde_json::json;
 use uuid::Uuid;
 //use test_macro::clean_up;
@@ -11,9 +12,9 @@ use uuid::Uuid;
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
     let mut app = TestApp::new().await;
-    let email = Email::parse("user@example.com").unwrap();
+    let email = Email::parse(SecretString::from("user@example.com")).unwrap();
     let signup_payload = json!({
-        "email": email.clone(),
+        "email": email.as_ref().expose_secret(),
         "password": "password",
         "requires2FA": true
     });
@@ -28,7 +29,7 @@ async fn should_return_422_if_malformed_input() {
     assert_eq!(response.status(), StatusCode::PARTIAL_CONTENT);
 
     let malformed_two_fa_payload = json!({
-        "email": email
+        "email": email.as_ref().expose_secret()
     });
 
     let two_fa_result = app.post_verify_2fa(&malformed_two_fa_payload).await;
@@ -41,9 +42,9 @@ async fn should_return_422_if_malformed_input() {
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
     let mut app = TestApp::new().await;
-    let email = Email::parse("user@example.com").unwrap();
+    let email = Email::parse(SecretString::from("user@example.com")).unwrap();
     let signup_payload = json!({
-        "email": email.clone(),
+        "email": email.as_ref().expose_secret(),
         "password": "password",
         "requires2FA": true
     });
@@ -73,9 +74,9 @@ async fn should_return_400_if_invalid_input() {
 #[tokio::test]
 async fn should_return_401_if_incorrect_credentials() {
     let mut app = TestApp::new().await;
-    let email = Email::parse("user@example.com").unwrap();
+    let email = Email::parse(SecretString::from("user@example.com")).unwrap();
     let signup_payload = json!({
-        "email": email.clone(),
+        "email": email.as_ref().expose_secret(),
         "password": "password",
         "requires2FA": true
     });
@@ -90,7 +91,7 @@ async fn should_return_401_if_incorrect_credentials() {
     assert_eq!(response.status(), StatusCode::PARTIAL_CONTENT);
 
     let incorrect_two_fa_payload = json!({
-        "email": email,
+        "email": email.as_ref().expose_secret(),
         "loginAttemptId": Uuid::now_v7().to_string(),
         "2FACode": "123456"
     });
@@ -106,9 +107,9 @@ async fn should_return_401_if_incorrect_credentials() {
 async fn should_return_401_if_old_code() {
     // Call login twice. Then, attempt to call verify-fa with the 2FA code from the first login request. This should fail.
     let mut app = TestApp::new().await;
-    let email = Email::parse("user@example.com").unwrap();
+    let email = Email::parse(SecretString::from("user@example.com")).unwrap();
     let signup_payload = json!({
-        "email": email.clone(),
+        "email": email.as_ref().expose_secret(),
         "password": "password",
         "requires2FA": true
     });
@@ -135,9 +136,9 @@ async fn should_return_401_if_old_code() {
     assert_eq!(second_login_response.status(), StatusCode::PARTIAL_CONTENT);
 
     let reuse_two_fa_payload = json!({
-        "email": email,
-        "loginAttemptId": first_login_2fa_code.0,
-        "2FACode": first_login_2fa_code.1
+        "email": email.as_ref().expose_secret(),
+        "loginAttemptId": first_login_2fa_code.0.as_ref().expose_secret(),
+        "2FACode": first_login_2fa_code.1.as_ref().expose_secret()
     });
 
     let two_fa_result = app.post_verify_2fa(&reuse_two_fa_payload).await;
@@ -150,9 +151,9 @@ async fn should_return_401_if_old_code() {
 #[tokio::test]
 async fn should_return_200_if_correct_code() {
     let mut app = TestApp::new().await;
-    let email = Email::parse("user@example.com").unwrap();
+    let email = Email::parse(SecretString::from("user@example.com")).unwrap();
     let signup_payload = json!({
-        "email": email.clone(),
+        "email": email.as_ref().expose_secret(),
         "password": "password",
         "requires2FA": true
     });
@@ -175,9 +176,9 @@ async fn should_return_200_if_correct_code() {
         .unwrap();
     let two_fa_auth_response = response.json::<TwoFactorAuthResponse>().await.unwrap();
     let two_fa_payload = json!({
-        "email": email,
+        "email": email.as_ref().expose_secret(),
         "loginAttemptId": two_fa_auth_response.login_attempt_id,
-        "2FACode": code_tuple.1
+        "2FACode": code_tuple.1.as_ref().expose_secret()
     });
 
     let two_fa_result = app.post_verify_2fa(&two_fa_payload).await;
@@ -197,9 +198,9 @@ async fn should_return_200_if_correct_code() {
 #[tokio::test]
 async fn should_return_401_if_same_code_twice() {
     let mut app = TestApp::new().await;
-    let email = Email::parse("user@example.com").unwrap();
+    let email = Email::parse(SecretString::from("user@example.com")).unwrap();
     let signup_payload = json!({
-        "email": email.clone(),
+        "email": email.as_ref().expose_secret(),
         "password": "password",
         "requires2FA": true
     });
@@ -222,9 +223,9 @@ async fn should_return_401_if_same_code_twice() {
         .unwrap();
     let two_fa_auth_response = response.json::<TwoFactorAuthResponse>().await.unwrap();
     let two_fa_payload = json!({
-        "email": email,
+        "email": email.as_ref().expose_secret(),
         "loginAttemptId": two_fa_auth_response.login_attempt_id,
-        "2FACode": code_tuple.1
+        "2FACode": code_tuple.1.as_ref().expose_secret()
     });
 
     let two_fa_result = app.post_verify_2fa(&two_fa_payload).await;

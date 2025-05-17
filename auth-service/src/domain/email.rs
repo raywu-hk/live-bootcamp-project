@@ -1,29 +1,34 @@
 use color_eyre::Result;
 use color_eyre::eyre::eyre;
-use serde::{Deserialize, Serialize};
-use sqlx::Type;
+use secrecy::{ExposeSecret, SecretString};
+use serde::Deserialize;
+use std::hash::Hash;
 use validator::ValidateEmail;
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Eq, Hash, Type)]
-#[sqlx(transparent)]
-pub struct Email(String);
+#[derive(Deserialize, Debug, Clone)]
+pub struct Email(SecretString);
 
 impl Email {
-    pub fn parse(email: &str) -> Result<Self> {
-        if !ValidateEmail::validate_email(&email) {
-            return Err(eyre!("{} is not a valid email.", email));
+    pub fn parse(email: SecretString) -> Result<Self> {
+        if !ValidateEmail::validate_email(&email.expose_secret()) {
+            return Err(eyre!("{} is not a valid email.", email.expose_secret()));
         }
-        Ok(Email(email.to_owned()))
+        Ok(Email(email))
+    }
+}
+impl Hash for Email {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.expose_secret().hash(state);
+    }
+}
+impl Eq for Email {}
+impl PartialEq for Email {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.expose_secret() == other.0.expose_secret()
     }
 }
 
-impl From<String> for Email {
-    fn from(email: String) -> Self {
-        Self(email)
-    }
-}
-
-impl AsRef<str> for Email {
-    fn as_ref(&self) -> &str {
+impl AsRef<SecretString> for Email {
+    fn as_ref(&self) -> &SecretString {
         &self.0
     }
 }
@@ -34,6 +39,7 @@ mod tests {
     use crate::Email;
     use fake::Fake;
     use fake::faker::internet::en::{DomainSuffix, FreeEmail};
+    use secrecy::SecretString;
     //use log::info;
 
     fn init() {
@@ -44,17 +50,17 @@ mod tests {
     fn parse_valid_email() {
         init();
         let email = FreeEmail().fake::<String>();
+        let sec_email = SecretString::from(email);
         //info!("testing email: {}", email);
-        let result = Email::parse(&email);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Email::from(email));
+        let result = Email::parse(sec_email.clone()).unwrap();
+        assert_eq!(result, Email::parse(sec_email.clone()).unwrap());
     }
 
     #[test]
     fn parse_invalid_email_no_at() {
         let email_suffix = DomainSuffix().fake::<String>();
         //info!("testing email: {}", email_suffix);
-        let result = Email::parse(&email_suffix);
+        let result = Email::parse(SecretString::from(email_suffix));
         assert!(result.is_err());
     }
 
@@ -62,7 +68,7 @@ mod tests {
     fn parse_invalid_email_starts_with_at() {
         let email = format!("@{}", FreeEmail().fake::<String>());
         //info!("testing email: {}", email);
-        let result = Email::parse(&email);
+        let result = Email::parse(SecretString::from(email));
         assert!(result.is_err());
     }
     #[derive(Debug, Clone)]
@@ -77,6 +83,6 @@ mod tests {
 
     #[quickcheck_macros::quickcheck]
     fn valid_emails_are_parsed_successfully(valid_email: ValidEmailFixture) -> bool {
-        Email::parse(&valid_email.0).is_ok()
+        Email::parse(SecretString::from(valid_email.0)).is_ok()
     }
 }

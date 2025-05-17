@@ -6,9 +6,10 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum_extra::extract::CookieJar;
 use color_eyre::Result;
-use serde::{Deserialize, Serialize};
+use secrecy::SecretString;
+use serde::Deserialize;
 // Implement the Verify2FARequest struct. See the verify-2fa route contract in step 1 for the expected JSON body.
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct Verify2FARequest {
     pub email: Email,
     #[serde(rename = "loginAttemptId")]
@@ -23,12 +24,12 @@ pub async fn verify_2fa(
     jar: CookieJar,
     Json(request): Json<Verify2FARequest>,
 ) -> Result<(CookieJar, impl IntoResponse), AuthAPIError> {
-    let email =
-        Email::parse(request.email.as_ref()).map_err(|_| AuthAPIError::InvalidCredentials)?;
-    let login_attempt_id = LoginAttemptId::parse(request.login_attempt_id.clone())
+    let email = Email::parse(SecretString::from(request.email.as_ref().to_owned()))
         .map_err(|_| AuthAPIError::InvalidCredentials)?;
-    let two_fa_code =
-        TwoFACode::parse(request.two_fa_code).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let login_attempt_id = LoginAttemptId::parse(SecretString::from(request.login_attempt_id))
+        .map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let two_fa_code = TwoFACode::parse(SecretString::from(request.two_fa_code))
+        .map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     let mut two_fa_code_store = state.two_fa_code_store.write().await;
 

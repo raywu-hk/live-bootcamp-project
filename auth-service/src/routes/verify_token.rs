@@ -7,6 +7,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use color_eyre::Result;
 use color_eyre::eyre::eyre;
+use secrecy::SecretString;
 use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct VerifyTokenRequest {
@@ -18,7 +19,7 @@ pub async fn verify_token(
     state: State<AppState>,
     Json(request): Json<VerifyTokenRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
-    let token = request.token;
+    let token = SecretString::from(request.token);
     validate_token(&token, state.banned_token_store.clone())
         .await
         .map_err(|_| AuthAPIError::InvalidToken)?;

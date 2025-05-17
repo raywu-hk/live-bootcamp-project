@@ -45,11 +45,12 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use secrecy::SecretString;
 
     #[tokio::test]
     async fn should_add_code_successfully() {
         let mut store = HashmapTwoFACodeStore::default();
-        let email = Email::parse("test@example.com").unwrap();
+        let email = Email::parse(SecretString::from("test@example.com")).unwrap();
         let login_attempt_id = LoginAttemptId::default();
         let code = TwoFACode::default();
 
@@ -62,7 +63,7 @@ mod tests {
     #[tokio::test]
     async fn should_remove_code_successfully() {
         let mut store = HashmapTwoFACodeStore::default();
-        let email = Email::parse("test@example.com").unwrap();
+        let email = Email::parse(SecretString::from("test@example.com")).unwrap();
         let login_attempt_id = LoginAttemptId::default();
         let code = TwoFACode::default();
 
@@ -77,7 +78,7 @@ mod tests {
     #[tokio::test]
     async fn should_get_code_successfully() {
         let mut store = HashmapTwoFACodeStore::default();
-        let email = Email::parse("test@example.com").unwrap();
+        let email = Email::parse(SecretString::from("test@example.com")).unwrap();
         let login_attempt_id = LoginAttemptId::default();
         let code = TwoFACode::default();
 
@@ -93,7 +94,7 @@ mod tests {
     #[tokio::test]
     async fn should_return_error_when_getting_non_existent_code() {
         let store = HashmapTwoFACodeStore::default();
-        let email = Email::parse("test@example.com").unwrap();
+        let email = Email::parse(SecretString::from("test@example.com")).unwrap();
 
         let result = store.get_code(&email).await;
         assert!(result.is_err());

@@ -7,6 +7,7 @@ use auth_service::{
 };
 use reqwest::Client;
 use reqwest::cookie::Jar;
+use secrecy::{ExposeSecret, SecretString};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use std::str::FromStr;
@@ -142,12 +143,13 @@ impl TestApp {
         // We are creating a new database for each test case, and we need to ensure each database has a unique name!
         let db_name = Uuid::now_v7().to_string();
 
-        Self::configure_database(&postgresql_conn_url, &db_name).await;
+        Self::configure_database(&postgresql_conn_url.expose_secret(), &db_name).await;
 
-        let postgresql_conn_url_with_db = format!("{}/{}", postgresql_conn_url, db_name);
+        let postgresql_conn_url_with_db =
+            format!("{}/{}", postgresql_conn_url.expose_secret(), db_name);
 
         // Create a new connection pool and return it
-        let pg_pool = get_postgres_pool(&postgresql_conn_url_with_db)
+        let pg_pool = get_postgres_pool(&SecretString::from(postgresql_conn_url_with_db))
             .await
             .expect("Failed to create Postgres connection pool!");
         (db_name, pg_pool)
@@ -189,7 +191,7 @@ impl TestApp {
     }
 
     async fn delete_database(db_name: &str) {
-        let postgresql_conn_url: String = DATABASE_URL.to_owned();
+        let postgresql_conn_url: String = DATABASE_URL.expose_secret().to_owned();
 
         let connection_options = PgConnectOptions::from_str(&postgresql_conn_url)
             .expect("Failed to parse PostgreSQL connection string");

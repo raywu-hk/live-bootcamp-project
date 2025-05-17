@@ -2,6 +2,7 @@ use crate::{Email, LoginAttemptId, TwoFACode, TwoFACodeStore, TwoFACodeStoreErro
 use color_eyre::Result;
 use color_eyre::eyre::Context;
 use redis::{Commands, Connection};
+use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -33,7 +34,10 @@ impl TwoFACodeStore for RedisTwoFACodeStore {
         // The expiration time should be set to TEN_MINUTES_IN_SECONDS.
         // Return TwoFACodeStoreError::UnexpectedError if casting fails or the call to set_ex fails.
         let key = get_key(&email);
-        let two_fa_tuple = (login_attempt_id, code);
+        let two_fa_tuple = (
+            login_attempt_id.as_ref().expose_secret(),
+            code.as_ref().expose_secret(),
+        );
         let json_str = serde_json::to_string(&two_fa_tuple)
             .wrap_err("failed to serialize 2FA tuple")
             .map_err(TwoFACodeStoreError::UnexpectedError)?;
@@ -80,10 +84,10 @@ impl TwoFACodeStore for RedisTwoFACodeStore {
                 let data: TwoFATuple = serde_json::from_str(&value)
                     .wrap_err("failed to deserialize 2FA tuple")
                     .map_err(TwoFACodeStoreError::UnexpectedError)?;
-                let login_attempt_id =
-                    LoginAttemptId::parse(data.0).map_err(TwoFACodeStoreError::UnexpectedError)?;
-                let email_code =
-                    TwoFACode::parse(data.1).map_err(TwoFACodeStoreError::UnexpectedError)?;
+                let login_attempt_id = LoginAttemptId::parse(SecretString::from(data.0))
+                    .map_err(TwoFACodeStoreError::UnexpectedError)?;
+                let email_code = TwoFACode::parse(SecretString::from(data.1))
+                    .map_err(TwoFACodeStoreError::UnexpectedError)?;
 
                 Ok((login_attempt_id, email_code))
             }
@@ -99,5 +103,5 @@ const TEN_MINUTES_IN_SECONDS: u64 = 600;
 const TWO_FA_CODE_PREFIX: &str = "two_fa_code:";
 
 fn get_key(email: &Email) -> String {
-    format!("{}{}", TWO_FA_CODE_PREFIX, email.as_ref())
+    format!("{}{}", TWO_FA_CODE_PREFIX, email.as_ref().expose_secret())
 }

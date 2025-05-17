@@ -3,6 +3,7 @@ use auth_service::Email;
 use auth_service::routes::TwoFactorAuthResponse;
 use auth_service::utils::JWT_COOKIE_NAME;
 use reqwest::StatusCode;
+use secrecy::{ExposeSecret, SecretString};
 use serde_json::json;
 //use test_macro::clean_up;
 
@@ -129,7 +130,8 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     assert_eq!(json_body.message, "2FA required".to_owned());
 
     //assert that `json_body.login_attempt_id` is stored inside `app.two_fa_code_store`
-    let email = Email::parse("user@example.com").expect("Could not parse email");
+    let email =
+        Email::parse(SecretString::from("user@example.com")).expect("Could not parse email");
     let two_fa_tuple = app
         .two_fa_code_store
         .read()
@@ -138,6 +140,9 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
         .await
         .expect("Could not get code");
 
-    assert_eq!(json_body.login_attempt_id, two_fa_tuple.0.as_ref());
+    assert_eq!(
+        json_body.login_attempt_id,
+        two_fa_tuple.0.as_ref().expose_secret()
+    );
     app.clean_up().await;
 }
