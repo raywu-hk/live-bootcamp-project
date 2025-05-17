@@ -95,7 +95,7 @@ impl UserStore for PostgresUserStore {
                     .map_err(|_| UserStoreError::UnexpectedError)?;
                     */
         let user = sqlx::query!(
-            "select users.email,users.password_hash from users where email = $1",
+            "select email, password_hash from users where email = $1",
             email.as_ref().expose_secret()
         )
         .fetch_optional(&self.pool)

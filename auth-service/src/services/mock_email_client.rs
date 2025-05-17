@@ -6,6 +6,7 @@ pub struct MockEmailClient;
 
 #[async_trait::async_trait]
 impl EmailClient for MockEmailClient {
+    #[tracing::instrument(name = "Sending email", skip_all)]
     async fn send_email(&self, recipient: &Email, subject: &str, content: &str) -> Result<()> {
         // Our mock email client will simply log the recipient, subject, and content to standard output
         tracing::debug!(

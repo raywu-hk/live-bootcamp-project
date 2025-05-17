@@ -15,6 +15,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
     let mut app = TestApp::new().await;
     let signup_response = app.post_signup(&signup_body).await;
     assert_eq!(signup_response.status(), StatusCode::CREATED);
+
     let login_body = json!({
         "email": "user@example.com",
         "password": "password",

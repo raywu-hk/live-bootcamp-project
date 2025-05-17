@@ -40,7 +40,7 @@ pub async fn login(
         Ok(email) => email,
         Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
     };
-    let password = match Password::parse(request.password) {
+    let password = match Password::parse(SecretString::from(request.password)) {
         Ok(password) => password,
         Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
     };

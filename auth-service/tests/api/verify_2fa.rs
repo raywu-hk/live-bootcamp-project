@@ -6,6 +6,8 @@ use axum::http::StatusCode;
 use secrecy::{ExposeSecret, SecretString};
 use serde_json::json;
 use uuid::Uuid;
+use wiremock::matchers::{method, path};
+use wiremock::{Mock, ResponseTemplate};
 //use test_macro::clean_up;
 
 //#[clean_up]
@@ -21,8 +23,15 @@ async fn should_return_422_if_malformed_input() {
     let signup_result = app.post_signup(&signup_payload).await;
     assert_eq!(signup_result.status(), StatusCode::CREATED);
 
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
     let login_body = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password"
     });
     let response = app.post_login(&login_body).await;
@@ -51,10 +60,18 @@ async fn should_return_400_if_invalid_input() {
     let signup_result = app.post_signup(&signup_payload).await;
     assert_eq!(signup_result.status(), StatusCode::CREATED);
 
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
     let login_body = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password"
     });
+
     let response = app.post_login(&login_body).await;
     assert_eq!(response.status(), StatusCode::PARTIAL_CONTENT);
 
@@ -82,6 +99,13 @@ async fn should_return_401_if_incorrect_credentials() {
     });
     let signup_result = app.post_signup(&signup_payload).await;
     assert_eq!(signup_result.status(), StatusCode::CREATED);
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
 
     let login_body = json!({
         "email": "user@example.com",
@@ -115,6 +139,13 @@ async fn should_return_401_if_old_code() {
     });
     let signup_result = app.post_signup(&signup_payload).await;
     assert_eq!(signup_result.status(), StatusCode::CREATED);
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(2)
+        .mount(&app.email_server)
+        .await;
 
     let login_body = json!({
         "email": "user@example.com",
@@ -159,6 +190,13 @@ async fn should_return_200_if_correct_code() {
     });
     let signup_result = app.post_signup(&signup_payload).await;
     assert_eq!(signup_result.status(), StatusCode::CREATED);
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
 
     let login_body = json!({
         "email": "user@example.com",
@@ -206,6 +244,13 @@ async fn should_return_401_if_same_code_twice() {
     });
     let signup_result = app.post_signup(&signup_payload).await;
     assert_eq!(signup_result.status(), StatusCode::CREATED);
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
 
     let login_body = json!({
         "email": "user@example.com",
