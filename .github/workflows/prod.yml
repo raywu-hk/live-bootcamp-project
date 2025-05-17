@@ -61,7 +61,7 @@ jobs:
           export JWT_SECRET=secret
           export DATABASE_URL=postgres://postgres:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432
           cargo build --verbose
-          cargo test --verbose -- --test-threads=1
+          cargo test --verbose
 
         # Set up Docker Buildx for multi-platform builds
       - name: Set up Docker Buildx
