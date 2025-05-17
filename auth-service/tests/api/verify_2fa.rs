@@ -1,4 +1,4 @@
-use crate::helpers::TestApp;
+use crate::helpers::{TestApp, get_random_email};
 use auth_service::Email;
 use auth_service::routes::TwoFactorAuthResponse;
 use auth_service::utils::JWT_COOKIE_NAME;
@@ -14,7 +14,8 @@ use wiremock::{Mock, ResponseTemplate};
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
     let mut app = TestApp::new().await;
-    let email = Email::parse(SecretString::from("user@example.com")).unwrap();
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let signup_payload = json!({
         "email": email.as_ref().expose_secret(),
         "password": "password",
@@ -51,7 +52,8 @@ async fn should_return_422_if_malformed_input() {
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
     let mut app = TestApp::new().await;
-    let email = Email::parse(SecretString::from("user@example.com")).unwrap();
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let signup_payload = json!({
         "email": email.as_ref().expose_secret(),
         "password": "password",
@@ -91,7 +93,8 @@ async fn should_return_400_if_invalid_input() {
 #[tokio::test]
 async fn should_return_401_if_incorrect_credentials() {
     let mut app = TestApp::new().await;
-    let email = Email::parse(SecretString::from("user@example.com")).unwrap();
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let signup_payload = json!({
         "email": email.as_ref().expose_secret(),
         "password": "password",
@@ -108,7 +111,7 @@ async fn should_return_401_if_incorrect_credentials() {
         .await;
 
     let login_body = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password"
     });
     let response = app.post_login(&login_body).await;
@@ -131,7 +134,8 @@ async fn should_return_401_if_incorrect_credentials() {
 async fn should_return_401_if_old_code() {
     // Call login twice. Then, attempt to call verify-fa with the 2FA code from the first login request. This should fail.
     let mut app = TestApp::new().await;
-    let email = Email::parse(SecretString::from("user@example.com")).unwrap();
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let signup_payload = json!({
         "email": email.as_ref().expose_secret(),
         "password": "password",
@@ -148,7 +152,7 @@ async fn should_return_401_if_old_code() {
         .await;
 
     let login_body = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password"
     });
 
@@ -182,7 +186,8 @@ async fn should_return_401_if_old_code() {
 #[tokio::test]
 async fn should_return_200_if_correct_code() {
     let mut app = TestApp::new().await;
-    let email = Email::parse(SecretString::from("user@example.com")).unwrap();
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let signup_payload = json!({
         "email": email.as_ref().expose_secret(),
         "password": "password",
@@ -199,7 +204,7 @@ async fn should_return_200_if_correct_code() {
         .await;
 
     let login_body = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password"
     });
     let response = app.post_login(&login_body).await;
@@ -236,7 +241,8 @@ async fn should_return_200_if_correct_code() {
 #[tokio::test]
 async fn should_return_401_if_same_code_twice() {
     let mut app = TestApp::new().await;
-    let email = Email::parse(SecretString::from("user@example.com")).unwrap();
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let signup_payload = json!({
         "email": email.as_ref().expose_secret(),
         "password": "password",
@@ -253,7 +259,7 @@ async fn should_return_401_if_same_code_twice() {
         .await;
 
     let login_body = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password"
     });
     let response = app.post_login(&login_body).await;

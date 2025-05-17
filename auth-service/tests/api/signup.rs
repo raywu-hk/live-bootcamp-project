@@ -1,15 +1,17 @@
-use crate::helpers::TestApp;
-use auth_service::ErrorResponse;
+use crate::helpers::{TestApp, get_random_email};
 use auth_service::routes::SignupResponse;
+use auth_service::{Email, ErrorResponse};
+use secrecy::{ExposeSecret, SecretString};
 //use test_macro::clean_up;
 
 //#[clean_up]
 #[tokio::test]
 async fn should_return_201_if_valid_input() {
     let mut app = TestApp::new().await;
-    let random_email = TestApp::get_random_email();
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let valid_payload = serde_json::json!({
-        "email": random_email,
+        "email": email.as_ref().expose_secret(),
         "password": "password123",
         "requires2FA": true
     });
@@ -31,25 +33,31 @@ async fn should_return_201_if_valid_input() {
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
     let mut app = TestApp::new().await;
-    let random_email = TestApp::get_random_email();
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let test_cases = [
+        //no email
         serde_json::json!({
             "password": "password123",
             "requires2FA": true
         }),
+        //no password
         serde_json::json!({
-            "email": random_email,
+            "email": email.as_ref().expose_secret(),
             "requires2FA": true
         }),
+        //no 2fa
         serde_json::json!({
-            "email": random_email,
+            "email": email.as_ref().expose_secret(),
             "password": "password123",
         }),
+        //2fa is no bool
         serde_json::json!({
-            "email": random_email,
+            "email": email.as_ref().expose_secret(),
             "password": "password123",
             "requires2FA": "true"
         }),
+        //nothing
         serde_json::json!({}),
     ];
 

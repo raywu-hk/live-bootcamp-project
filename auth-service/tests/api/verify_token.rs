@@ -1,6 +1,8 @@
-use crate::helpers::TestApp;
+use crate::helpers::{TestApp, get_random_email};
+use auth_service::Email;
 use auth_service::utils::JWT_COOKIE_NAME;
 use axum::http::StatusCode;
+use secrecy::{ExposeSecret, SecretString};
 use serde_json::json;
 //use test_macro::clean_up;
 
@@ -21,8 +23,10 @@ async fn should_return_422_if_malformed_input() {
 #[tokio::test]
 async fn should_return_200_valid_token() {
     let mut app = TestApp::new().await;
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let signup_payload = json!({
-        "email": "email@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password123",
         "requires2FA": false
     });
@@ -31,7 +35,7 @@ async fn should_return_200_valid_token() {
     assert_eq!(signup_response.status(), StatusCode::CREATED);
 
     let login_payload = json!({
-        "email": "email@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password123",
     });
     let login_response = app.post_login(&login_payload).await;
@@ -54,8 +58,10 @@ async fn should_return_200_valid_token() {
 #[tokio::test]
 async fn should_return_401_if_invalid_token() {
     let mut app = TestApp::new().await;
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let signup_payload = json!({
-        "email": "email@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password123",
         "requires2FA": false
     });
@@ -64,7 +70,7 @@ async fn should_return_401_if_invalid_token() {
     assert_eq!(signup_response.status(), StatusCode::CREATED);
 
     let login_payload = json!({
-        "email": "email@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password123",
     });
     let login_response = app.post_login(&login_payload).await;
@@ -83,8 +89,10 @@ async fn should_return_401_if_invalid_token() {
 #[tokio::test]
 async fn should_return_401_if_banned_token() {
     let mut app = TestApp::new().await;
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let signup_payload = json!({
-        "email": "email@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password123",
         "requires2FA": false
     });
@@ -93,7 +101,7 @@ async fn should_return_401_if_banned_token() {
     assert_eq!(signup_response.status(), StatusCode::CREATED);
 
     let login_payload = json!({
-        "email": "email@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password123",
     });
     let login_response = app.post_login(&login_payload).await;

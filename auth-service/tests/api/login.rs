@@ -1,4 +1,4 @@
-use crate::helpers::TestApp;
+use crate::helpers::{TestApp, get_random_email};
 use auth_service::Email;
 use auth_service::routes::TwoFactorAuthResponse;
 use auth_service::utils::JWT_COOKIE_NAME;
@@ -14,10 +14,11 @@ use wiremock::{Mock, ResponseTemplate};
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
     let mut app = TestApp::new().await;
 
-    let random_email = TestApp::get_random_email();
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
 
     let signup_body = json!({
-        "email": random_email,
+        "email": email.as_ref().expose_secret(),
         "password": "password123",
         "requires2FA": false
     });
@@ -27,7 +28,7 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
     assert_eq!(response.status().as_u16(), 201);
 
     let login_body = json!({
-        "email": random_email,
+        "email": email.as_ref().expose_secret(),
         "password": "password123",
     });
 
@@ -61,8 +62,10 @@ async fn should_return_422_if_malformed_credentials() {
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
     let mut app = TestApp::new().await;
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let signup_payload = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password",
         "requires2FA": false
     });
@@ -85,8 +88,10 @@ async fn should_return_400_if_invalid_input() {
 #[tokio::test]
 async fn should_return_401_if_incorrect_credentials() {
     let mut app = TestApp::new().await;
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let signup_payload = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password",
         "requires2FA": false
     });
@@ -96,7 +101,7 @@ async fn should_return_401_if_incorrect_credentials() {
     // Call the log-in route with incorrect credentials and assert
     // that a 401 HTTP status code is returned along with the appropriate error message.
     let login_payload = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "wrong password",
     });
     let login_result = app.post_login(&login_payload).await;
@@ -108,8 +113,10 @@ async fn should_return_401_if_incorrect_credentials() {
 #[tokio::test]
 async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     let mut app = TestApp::new().await;
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let signup_payload = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password",
         "requires2FA": true
     });
@@ -126,7 +133,7 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
         .await; // Await the asynchronous operation to ensure the mock server is set up before proceeding
 
     let login_body = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password"
     });
 
@@ -140,8 +147,6 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     assert_eq!(json_body.message, "2FA required".to_owned());
 
     //assert that `json_body.login_attempt_id` is stored inside `app.two_fa_code_store`
-    let email =
-        Email::parse(SecretString::from("user@example.com")).expect("Could not parse email");
     let two_fa_tuple = app
         .two_fa_code_store
         .read()

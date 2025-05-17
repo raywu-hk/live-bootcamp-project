@@ -1,14 +1,18 @@
-use crate::helpers::TestApp;
+use crate::helpers::{TestApp, get_random_email};
+use auth_service::Email;
 use auth_service::utils::JWT_COOKIE_NAME;
 use reqwest::{StatusCode, Url};
+use secrecy::{ExposeSecret, SecretString};
 use serde_json::json;
 //use test_macro::clean_up;
 
 //#[clean_up]
 #[tokio::test]
 async fn should_return_200_if_valid_jwt_cookie() {
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let signup_body = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password",
         "requires2FA": false
     });
@@ -17,7 +21,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
     assert_eq!(signup_response.status(), StatusCode::CREATED);
 
     let login_body = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password",
     });
 
@@ -31,8 +35,10 @@ async fn should_return_200_if_valid_jwt_cookie() {
 //#[clean_up]
 #[tokio::test]
 async fn should_return_400_if_logout_called_twice_in_a_row() {
+    let email = get_random_email();
+    let email = Email::parse(SecretString::from(email)).unwrap();
     let signup_body = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password",
         "requires2FA": false
     });
@@ -40,7 +46,7 @@ async fn should_return_400_if_logout_called_twice_in_a_row() {
     let sign_response = app.post_signup(&signup_body).await;
     assert_eq!(sign_response.status(), StatusCode::CREATED);
     let login_body = json!({
-        "email": "user@example.com",
+        "email": email.as_ref().expose_secret(),
         "password": "password",
     });
 

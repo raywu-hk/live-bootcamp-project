@@ -139,10 +139,6 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub fn get_random_email() -> String {
-        format!("{}@example.com", Uuid::now_v7())
-    }
-
     async fn configure_postgresql() -> (String, PgPool) {
         let postgresql_conn_url = DATABASE_URL.to_owned();
 
@@ -247,6 +243,10 @@ impl TestApp {
         self.clean_up_called = true
     }
 }
+pub fn get_random_email() -> String {
+    format!("{}@example.com", Uuid::now_v7())
+}
+
 impl Drop for TestApp {
     fn drop(&mut self) {
         if !self.clean_up_called {
